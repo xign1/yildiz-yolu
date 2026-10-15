@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#091910">
+    <title>Yıldız Yolu - Futbolcu Kariyeri</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;0,900;1,800&family=Chakra+Petch:wght@600;700&family=Nunito:wght@700;800;900&display=swap');
+        
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #0b1f13;
+            color: #1c2526;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .font-sport {
+            font-family: 'Barlow Condensed', sans-serif;
+            letter-spacing: 0.03em;
+        }
+        .font-led {
+            font-family: 'Chakra Petch', sans-serif;
+        }
+        .app-container {
+            max-width: 440px;
+            min-height: 100vh;
+            margin: 0 auto;
+            background: repeating-linear-gradient(
+                180deg,
+                #1d6336 0px,
+                #1d6336 44px,
+                #17522c 44px,
+                #17522c 88px
+            );
+            border-left: 4px solid #e2dec9;
+            border-right: 4px solid #e2dec9;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            box-shadow: 0 0 60px rgba(0,0,0,0.85);
+        }
+        /* Rafine Taktik Pano Kartları (Korunan Bej/Yeşil Kimlik, İnceltilmiş Çerçeve) */
+        .board-panel {
+            background-color: #f5f1e4;
+            color: #18221d;
+            border: 2px solid #143321;
+            border-radius: 10px;
+            box-shadow: 0 3px 0 rgba(9, 25, 16, 0.45);
+        }
+        .board-header {
+            background-color: #143321;
+            color: #ffffff;
+            border-bottom: 2px solid #0d2417;
+            padding: 8px 14px;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+        }
+        /* Fiziksel Arcade Spor Butonları (Sol Şerit Vurgulu, Keskin) */
+        .sport-btn-green {
+            background-color: #16a34a;
+            color: #ffffff;
+            border: 2px solid #07190e;
+            border-bottom-width: 5px;
+            border-radius: 4px;
+            text-shadow: 0 1px 0 #07190e;
+            transition: all 0.06s;
+        }
+        .sport-btn-green:active {
+            transform: translateY(3px);
+            border-bottom-width: 2px;
+        }
+        .sport-btn-gold {
+            background-color: #eab308;
+            color: #1c1917;
+            border: 2px solid #07190e;
+            border-bottom-width: 5px;
+            border-radius: 4px;
+            transition: all 0.06s;
+        }
+        .sport-btn-gold:active {
+            transform: translateY(3px);
+            border-bottom-width: 2px;
+        }
+        .sport-btn-cream {
+            background-color: #e6e0cc;
+            color: #0f291a;
+            border: 2px solid #0f291a;
+            border-bottom-width: 4px;
+            border-radius: 4px;
+            transition: all 0.06s;
+        }
+        .sport-btn-cream:active {
+            transform: translateY(2px);
+            border-bottom-width: 2px;
+        }
+        /* Segmentli Bar Hücreleri */
+        .seg-cell {
+            height: 10px;
+            flex: 1;
+            border: 1px solid #091910;
+            transform: skewX(-12deg);
+        }
+        .input-board {
+            background-color: #ffffff;
+            border: 2px solid #0f291a;
+            color: #0f172a;
+            border-radius: 4px;
+            font-weight: 800;
+            box-shadow: inset 0 2px 0 rgba(0,0,0,0.08);
+        }
+
+        /* ANİMASYONLAR */
+        @keyframes screenPop {
+            0% { opacity: 0; transform: translateY(6px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        .animate-screen { animation: screenPop 0.2s ease-out forwards; }
+
+        @keyframes goalBannerAnim {
+            0% { transform: scale(0.3) translateY(-30px); opacity: 0; }
+            60% { transform: scale(1.06) translateY(0); opacity: 1; }
+            100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
+        .goal-banner-pop { animation: goalBannerAnim 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+
+        @keyframes floatUpFade {
+            0% { opacity: 1; transform: translateY(0) scale(0.95); }
+            100% { opacity: 0; transform: translateY(-42px) scale(1.1); }
+        }
+        .floating-badge { animation: floatUpFade 1.25s ease-out forwards; }
+
+        @keyframes shakePitch {
+            0%, 100% { transform: translate(0, 0); }
+            20% { transform: translate(-6px, 3px); }
+            40% { transform: translate(6px, -3px); }
+            60% { transform: translate(-4px, -2px); }
+            80% { transform: translate(4px, 2px); }
+        }
+        .shake-anim { animation: shakePitch 0.45s ease-in-out; }
+
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: #dfd9c3; }
+        ::-webkit-scrollbar-thumb { background: #0f291a; }
+    </style>
+</head>
+<body>
+
+<div class="app-container overflow-hidden" id="main-app-shell">
+
+    <!-- UÇAN ROZETLER KAPSAYICISI -->
+    <div id="fx-overlay" class="pointer-events-none absolute inset-0 z-50 overflow-hidden"></div>
+
+    <!-- MAÇ İÇİ CANLI GOL ANONSU (HER GOLDE HANGİ TAKIMIN ATTIĞINI HİSSETTİRİR!) -->
+    <div id="goal-celebration-overlay" class="hidden pointer-events-none absolute inset-0 z-50 flex items-center justify-center bg-black/65 p-4">
+        <div id="goal-banner-box" class="goal-banner-pop w-full max-w-[360px] bg-[#0f291a] border-4 border-[#eab308] p-4 shadow-[6px_6px_0_#000] text-center relative overflow-hidden">
+            <div id="goal-banner-stripe" class="h-2 w-full bg-[#eab308] mb-3"></div>
+            <div class="flex items-center justify-center gap-3 mb-2">
+                <div id="goal-banner-crest"></div>
+                <div class="text-left">
+                    <div id="goal-banner-team" class="font-sport text-xl font-black uppercase text-white leading-none">GENÇLERBİRLİĞİ</div>
+                    <div id="goal-banner-type" class="text-[11px] font-black text-[#eab308] uppercase tracking-wider">GOOOL! AĞLAR HAVALANDI!</div>
+                </div>
+            </div>
+            <div id="goal-banner-score" class="font-led text-4xl font-bold text-white bg-black/50 py-1.5 px-4 border border-white/20 inline-block my-1">
+                1 - 0
+            </div>
+            <div id="goal-scorer-sub" class="text-xs font-extrabold text-emerald-200 mt-1 uppercase">34' Emirhan Koç</div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- EKRAN 1: ANA MENÜ                          -->
+    <!-- ========================================== -->
+    <section id="screen-menu" class="flex-1 flex flex-col justify-between p-5 relative animate-screen">
+        <svg class="absolute inset-0 w-full h-full opacity-20 pointer-events-none" viewBox="0 0 400 800" fill="none">
+            <rect x="16" y="16" width="368" height="768" stroke="white" stroke-width="4"/>
+            <line x1="16" y1="400" x2="384" y2="400" stroke="white" stroke-width="4"/>
+            <circle cx="200" cy="400" r="65" stroke="white" stroke-width="4"/>
+            <rect x="95" y="16" width="210" height="95" stroke="white" stroke-width="4"/>
+            <rect x="95" y="689" width="210" height="95" stroke="white" stroke-width="4"/>
+        </svg>
+
+        <div class="z-10 mt-5">
+            <div class="bg-[#0f291a] border-4 border-[#e2dec9] p-4 shadow-[6px_6px_0_#07140c] relative">
+                <div class="flex items-center justify-between border-b-2 border-[#eab308] pb-2 mb-2">
+                    <span class="font-sport text-xs font-black tracking-widest uppercase text-[#eab308]">PROFESYONEL KARİYER MODU</span>
+                    <span id="menu-ball-icon" class="text-white"></span>
+                </div>
+                <h1 class="font-sport text-6xl font-black italic tracking-wide text-white uppercase leading-none">
+                    YILDIZ <span class="text-[#eab308]">YOLU</span>
+                </h1>
+                <p class="text-xs font-bold text-emerald-200 mt-1">Kaderini çevir, kararlarınla kulüp efsanesi ol.</p>
+            </div>
+        </div>
+
+        <div class="z-10 my-auto space-y-2.5">
+            <div class="bg-[#0f291a] text-white px-3 py-1.5 border-2 border-[#e2dec9] flex justify-between items-center">
+                <span class="font-sport text-sm font-black uppercase tracking-wider">KAYITLI KARİYER DOSYALARI</span>
+                <span class="font-led text-xs font-bold text-[#eab308]">3 SLOT</span>
+            </div>
+            <div id="save-slots-container" class="space-y-3"></div>
+        </div>
+
+        <div class="z-10 bg-[#0f291a] text-emerald-100 px-3 py-2 border-2 border-[#091910] flex justify-between items-center text-[11px] font-bold">
+            <span>SÜRÜM 0.8 • ARCADE STADYUM</span>
+            <span>TR • EN • ES</span>
+        </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- EKRAN 2: OYUNCU OLUŞTURMA                  -->
+    <!-- ========================================== -->
+    <section id="screen-create" class="hidden flex-1 flex flex-col p-4 animate-screen">
+        <div class="flex justify-between items-center pb-3">
+            <button onclick="showScreen('screen-menu')" class="px-3.5 py-2 sport-btn-cream font-sport text-sm font-black uppercase flex items-center gap-1.5">
+                <span id="icon-back-arrow"></span> ANA MENÜ
+            </button>
+            <button onclick="proceedToOvrWheelFirst()" class="px-4 py-2 sport-btn-gold font-sport text-sm font-black flex items-center gap-1.5 uppercase">
+                <span>KURA ÇARKINA GEÇ</span>
+                <span id="icon-next-arrow"></span>
+            </button>
+        </div>
+
+        <div class="board-panel mb-3 overflow-hidden">
+            <div class="board-header">
+                <h2 class="font-sport text-xl font-black uppercase tracking-wider text-[#eab308] leading-none">TFF / UEFA FUTBOLCU LİSANSI</h2>
+            </div>
+            <p class="p-2.5 text-xs text-slate-700 font-extrabold">Kimliğini oluştur. Önce OVR kuran, ardından gücüne uygun kulüp kuran çekilecek.</p>
+        </div>
+
+        <div class="flex-1 grid grid-cols-12 gap-3 items-center my-1">
+            <div class="col-span-5 h-full flex flex-col items-center justify-center board-panel p-2 relative bg-[#e6e0cc]">
+                <span id="preview-pos-badge" class="absolute top-2 left-2 px-2 py-0.5 bg-[#0f291a] text-[#eab308] font-sport text-sm font-black">OO</span>
+                <div id="avatar-preview-box" class="w-full flex items-center justify-center py-2"></div>
+                <span class="text-[10px] font-extrabold text-slate-700 mt-1 text-center leading-tight">Kulüp kurasında forma giyilir</span>
+            </div>
+
+            <div class="col-span-7 board-panel p-3 space-y-2 text-xs">
+                <div>
+                    <label class="block text-[#0f291a] font-black mb-0.5 text-[11px] uppercase">Ad Soyad</label>
+                    <input id="inp-name" type="text" value="Emirhan Koç" maxlength="22" class="w-full px-2.5 py-1.5 input-board text-xs">
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-[#0f291a] font-black mb-0.5 text-[11px] uppercase">Mevki</label>
+                        <select id="inp-pos" onchange="updateAvatarPreview()" class="w-full px-1.5 py-1.5 input-board text-xs">
+                            <option value="SNT">Santrafor (SNT)</option>
+                            <option value="OO" selected>On Numara (OO)</option>
+                            <option value="SĞK">Sağ Kanat (SĞK)</option>
+                            <option value="SLK">Sol Kanat (SLK)</option>
+                            <option value="MO">Merkez OS (MO)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[#0f291a] font-black mb-0.5 text-[11px] uppercase">Saç Modeli</label>
+                        <select id="inp-hair-style" onchange="updateAvatarPreview()" class="w-full px-1.5 py-1.5 input-board text-xs">
+                            <option value="short">Kısa Modern</option>
+                            <option value="curly" selected>Kıvırcık</option>
+                            <option value="fade">Yanlar Kısa</option>
+                            <option value="long">Uzun Omuzda</option>
+                            <option value="buzz">Üç Numara</option>
+                            <option value="bald">Kel</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[#0f291a] font-black mb-0.5 text-[11px] uppercase">Sakal Tipi</label>
+                    <select id="inp-beard-style" onchange="updateAvatarPreview()" class="w-full px-2 py-1.5 input-board text-xs">
+                        <option value="none" selected>Sakalsız</option>
+                        <option value="stubble">Kirli Sakal</option>
+                        <option value="goatee">Keçi Sakalı & Bıyık</option>
+                        <option value="full">Gür Tam Sakal</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-[#0f291a] font-black mb-0.5 text-[11px] uppercase">Saç Rengi</label>
+                        <div class="flex gap-1 bg-white p-1 border-2 border-[#0f291a]" id="hair-color-picker">
+                            <button onclick="selectHairColor('#141413', this)" class="w-6 h-5 bg-[#141413]"></button>
+                            <button onclick="selectHairColor('#4a2e1b', this)" class="w-6 h-5 bg-[#4a2e1b] ring-2 ring-emerald-600"></button>
+                            <button onclick="selectHairColor('#9a4b1a', this)" class="w-6 h-5 bg-[#9a4b1a]"></button>
+                            <button onclick="selectHairColor('#d4a017', this)" class="w-6 h-5 bg-[#d4a017]"></button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[#0f291a] font-black mb-0.5 text-[11px] uppercase">Ten Rengi</label>
+                        <div class="flex gap-1 bg-white p-1 border-2 border-[#0f291a]" id="skin-color-picker">
+                            <button onclick="selectSkinColor('#fbdcc4', this)" class="w-6 h-5 bg-[#fbdcc4]"></button>
+                            <button onclick="selectSkinColor('#f1c27d', this)" class="w-6 h-5 bg-[#f1c27d] ring-2 ring-emerald-600"></button>
+                            <button onclick="selectSkinColor('#c68642', this)" class="w-6 h-5 bg-[#c68642]"></button>
+                            <button onclick="selectSkinColor('#6f4e37', this)" class="w-6 h-5 bg-[#6f4e37]"></button>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[#0f291a] font-black mb-0.5 text-[11px] uppercase">Başlangıç Ligi</label>
+                    <select id="inp-country" class="w-full px-2 py-1.5 input-board text-xs">
+                        <option value="TR" selected>Türkiye (Süper Lig)</option>
+                        <option value="EN">İngiltere (Premier League)</option>
+                        <option value="ES">İspanya (LaLiga)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-[#0f291a] font-black mb-0.5 text-[11px] uppercase">Kariyer Hedefi</label>
+                    <select id="inp-dream" class="w-full px-2 py-1.5 input-board text-xs">
+                        <option value="Fenerbahçe">Fenerbahçe</option>
+                        <option value="Galatasaray">Galatasaray</option>
+                        <option value="Beşiktaş">Beşiktaş</option>
+                        <option value="Real Madrid">Real Madrid</option>
+                        <option value="Barcelona">Barcelona</option>
+                        <option value="Manchester City">Manchester City</option>
+                        <option value="Arsenal">Arsenal</option>
+                        <option value="Liverpool">Liverpool</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- EKRAN 3: KURA ÇARKI (OVR -> KULÜP)         -->
+    <!-- ========================================== -->
+    <section id="screen-club-draw" class="hidden flex-1 flex flex-col items-center justify-between p-5 animate-screen">
+        <div class="board-panel w-full overflow-hidden text-center">
+            <div class="board-header">
+                <span id="draw-step-badge" class="font-sport text-sm font-black uppercase tracking-widest text-[#eab308]">
+                    AŞAMA 1 / 2 • YETENEK KURASI
+                </span>
+            </div>
+            <div class="p-3">
+                <h2 id="draw-title" class="font-sport text-3xl font-black text-[#0f291a] uppercase leading-none">BAŞLANGIÇ OVERALL ÇARKI</h2>
+                <p id="draw-subtitle" class="text-xs text-slate-700 font-bold mt-1">Önce başlangıç gücünü belirle (56 - 73 OVR). Çıkan derece kulüp kurasını etkiler.</p>
+            </div>
+        </div>
+
+        <div class="relative flex items-center justify-center my-2">
+            <div id="draw-wheel-pointer" class="absolute -top-3.5 z-20 w-0 h-0 border-l-[13px] border-l-transparent border-r-[13px] border-r-transparent border-t-[24px] border-t-[#eab308] drop-shadow-[0_3px_0_#07190e] transition-transform duration-75"></div>
+            <canvas id="clubWheelCanvas" width="290" height="290" class="rounded-full border-4 border-[#0f291a] shadow-[0_6px_0_#091910]"></canvas>
+            <div class="absolute w-12 h-12 rounded-full bg-[#f3efe2] border-4 border-[#0f291a] flex items-center justify-center text-[#0f291a]" id="draw-center-icon"></div>
+        </div>
+
+        <div id="club-draw-result" class="hidden board-panel w-full p-3.5 text-center animate-screen">
+            <div id="draw-result-label" class="text-[11px] uppercase font-black text-slate-500">Kura Sonucu</div>
+            <div id="drawn-club-name" class="font-sport text-2xl font-black text-[#0f291a] mt-0.5">60 OVR</div>
+            <p id="draw-result-desc" class="text-xs font-bold text-slate-700 mt-1"></p>
+        </div>
+
+        <div class="w-full space-y-2">
+            <button id="btn-spin-club" onclick="spinCreationWheel()" class="w-full py-3.5 sport-btn-gold font-sport text-lg font-black uppercase tracking-wider">
+                ÇARKI ÇEVİR!
+            </button>
+            <button id="btn-proceed-club-wheel" onclick="setupClubWheelStep()" class="hidden w-full py-3.5 sport-btn-green font-sport text-lg font-black uppercase tracking-wider">
+                2. AŞAMA: KULÜP KURASINA GEÇ →
+            </button>
+            <button id="btn-start-career-final" onclick="finalizeCareerStart()" class="hidden w-full py-3.5 sport-btn-green font-sport text-lg font-black uppercase tracking-wider">
+                SÖZLEŞMEYİ İMZALA VE SAHAYA ÇIK!
+            </button>
+        </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- EKRAN 4: ANA OYUN MERKEZİ                  -->
+    <!-- ========================================== -->
+    <section id="screen-game" class="hidden flex-1 flex flex-col overflow-hidden">
+        
+        <!-- ÜST SKORBORD & SEGMENTLİ GÖSTERGELER (AI BARLARI KALDIRILDI!) -->
+        <header class="bg-[#0f291a] border-b-4 border-[#eab308] text-white shadow-lg">
+            <div class="p-3 flex items-center justify-between gap-2 border-b border-white/10">
+                <div class="flex items-center gap-2.5">
+                    <div id="hub-mini-avatar" class="w-12 h-12 bg-[#f3efe2] border-2 border-[#eab308] flex items-center justify-center overflow-hidden shrink-0"></div>
+                    <div>
+                        <div class="flex items-center gap-1.5">
+                            <span id="ui-ovr-badge" class="px-2 py-0.5 bg-[#eab308] text-[#07190e] font-led font-bold text-sm leading-none">60</span>
+                            <h1 id="ui-player-name" class="font-sport text-xl font-black tracking-wide text-white uppercase leading-none">Emirhan Koç</h1>
+                            <span id="ui-player-pos" class="text-[10px] font-black px-1.5 py-0.5 bg-[#183d28] text-emerald-200 border border-emerald-500/40">OO</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 mt-1 text-xs text-emerald-100 font-bold">
+                            <span id="ui-club-badge" class="flex items-center"></span>
+                            <span id="ui-club-name">Gençlerbirliği</span>
+                            <span class="text-[#eab308]">•</span>
+                            <span id="ui-season-stats" class="font-led text-[#eab308] font-bold">0M 0G 0A</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-right shrink-0">
+                    <div class="flex items-center justify-end gap-1.5">
+                        <span id="ui-week-label" class="font-sport text-sm font-black uppercase text-emerald-200">SEZON 1 • H1</span>
+                        <button onclick="showScreen('screen-menu')" class="px-2 py-0.5 bg-[#183d28] border border-white/30 text-[10px] font-black uppercase text-white">MENÜ</button>
+                    </div>
+                    <div id="ui-money" class="font-led text-lg font-bold text-[#4ade80] leading-tight mt-0.5">₺3.000</div>
+                    <div id="ui-dream-target" class="text-[10px] font-bold text-emerald-300/80">Hedef: Fenerbahçe</div>
+                </div>
+            </div>
+
+            <!-- YENİ STADYUM TİPİ SEGMENTLİ KONDİSYON, ODAK YILDIZLARI & HOCA GÜVENİ -->
+            <div class="px-3 py-2 bg-[#091910] grid grid-cols-12 gap-2 items-center">
+                <!-- Kondisyon: 10 Parçalı Pil/Enerji Blokları -->
+                <div class="col-span-5 bg-[#122b1d] p-1.5 border border-[#234d35]">
+                    <div class="flex justify-between items-center text-[10px] font-black uppercase mb-1">
+                        <span class="text-emerald-300 tracking-wider">KONDİSYON</span>
+                        <span id="ui-energy-text" class="font-led text-white">%100</span>
+                    </div>
+                    <div id="ui-energy-segments" class="flex gap-0.5 pr-1">
+                        <!-- JS ile 10 adet eğik blok çizilecek -->
+                    </div>
+                </div>
+
+                <!-- Odak: 5 Adet Fiziksel Yıldız / Rozet Soketi -->
+                <div class="col-span-3 bg-[#122b1d] p-1.5 border border-[#234d35]">
+                    <div class="flex justify-between items-center text-[10px] font-black uppercase mb-1">
+                        <span class="text-[#eab308] tracking-wider">ODAK</span>
+                        <span id="ui-focus-text" class="font-led text-white">3/5</span>
+                    </div>
+                    <div id="ui-focus-sockets" class="flex justify-between items-center gap-0.5 h-[10px]">
+                        <!-- JS ile 5 odak rozeti çizilecek -->
+                    </div>
+                </div>
+
+                <!-- Hoca Güveni & Form: 5 Kademeli Teknik Direktör Barı -->
+                <div class="col-span-4 bg-[#122b1d] p-1.5 border border-[#234d35]">
+                    <div class="flex justify-between items-center text-[10px] font-black uppercase mb-1">
+                        <span class="text-sky-300 tracking-wider">HOCA GÜVENİ</span>
+                        <span id="ui-trust-text" class="font-led text-white">%70</span>
+                    </div>
+                    <div id="ui-trust-segments" class="flex gap-0.5 pr-1">
+                        <!-- JS ile 8 adet güven bloğu çizilecek -->
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- ANA İÇERİK ALANI -->
+        <main class="flex-1 p-3 overflow-y-auto space-y-3">
+
+            <!-- SEKME A: SOYUNMA ODASI (FERAHLATILMIŞ MAÇ HAZIRLIĞI & FORM) -->
+            <div id="tab-content-hub" class="space-y-3 animate-screen">
+                
+                <!-- 1. Kadro Statüsü & Hoca Raporu (İç içe kutulardan arındırılmış temiz şerit) -->
+                <div id="squad-status-banner" class="board-panel p-3 flex items-center justify-between border-l-4 border-l-[#16a34a]">
+                    <div class="pr-2">
+                        <div class="flex items-center gap-2">
+                            <span id="squad-role-badge" class="font-sport text-xs font-bold uppercase px-2 py-0.5 rounded bg-[#143321] text-[#eab308]">İLK 11</span>
+                            <span id="squad-req-ovr" class="text-xs font-extrabold text-[#143321]">Kulüp Barajı: 58 OVR</span>
+                            <span id="active-buff-badge" class="hidden text-[10px] font-black px-1.5 py-0.5 rounded bg-red-600 text-white uppercase">SÖZ AKTİF</span>
+                        </div>
+                        <p id="squad-role-desc" class="text-xs font-bold text-slate-600 mt-1 leading-snug">Hoca sana güveniyor, maça ilk 11'de başlıyorsun.</p>
+                    </div>
+                </div>
+
+                <!-- 2. Sıradaki Maç Sahnesi (Öncelikli Eylem Alanı) -->
+                <div class="board-panel overflow-hidden">
+                    <div class="board-header flex justify-between items-center">
+                        <span class="font-sport text-sm font-bold tracking-wider text-[#eab308] uppercase">
+                            <span id="hub-league-name">Süper Lig</span> • <span id="hub-match-week">1. Hafta</span>
+                        </span>
+                        <span id="hub-last-ratings" class="text-xs font-bold text-emerald-200">Son Maç: -</span>
+                    </div>
+
+                    <div class="p-3.5 space-y-3.5">
+                        <!-- Maç Eşleşme Tabelası -->
+                        <div class="grid grid-cols-7 items-center py-3.5 bg-[#143321] text-white rounded-lg border border-[#091910] px-3 shadow-inner">
+                            <div class="col-span-3 flex flex-col items-center text-center">
+                                <div id="hub-home-crest" class="mb-1.5"></div>
+                                <span id="hub-home-name" class="font-sport text-lg font-extrabold text-white leading-none">Gençlerbirliği</span>
+                                <span class="text-[10px] text-emerald-300/90 font-semibold mt-1">Ev Sahibi</span>
+                            </div>
+                            <div class="col-span-1 text-center">
+                                <span class="font-sport text-sm font-black px-2 py-0.5 rounded bg-[#eab308] text-[#07190e]">VS</span>
+                            </div>
+                            <div class="col-span-3 flex flex-col items-center text-center">
+                                <div id="hub-away-crest" class="mb-1.5"></div>
+                                <span id="hub-away-name" class="font-sport text-lg font-extrabold text-white leading-none">Fenerbahçe</span>
+                                <span class="text-[10px] text-amber-300/90 font-semibold mt-1">Deplasman</span>
+                            </div>
+                        </div>
+
+                        <!-- Maç Mentalitesi (Sakinleştirilmiş Segmented Control) -->
+                        <div>
+                            <div class="flex justify-between items-center text-xs mb-1.5">
+                                <span class="text-[#143321] font-extrabold">Maç Eforu ve Tempo</span>
+                                <span id="hub-mentality-cost" class="text-xs font-extrabold text-amber-800 bg-amber-500/15 px-2 py-0.5 rounded">-20 Kondisyon</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-1.5 bg-[#e6e0cc] p-1 rounded-lg border border-[#143321]/30">
+                                <button onclick="setMentality('safe')" id="ment-safe" class="py-1.5 rounded-md text-xs font-extrabold text-slate-700 transition">
+                                    Rölanti (-12)
+                                </button>
+                                <button onclick="setMentality('balanced')" id="ment-balanced" class="py-1.5 rounded-md bg-[#143321] text-xs font-extrabold text-[#eab308] shadow-sm transition">
+                                    Dengeli (-20)
+                                </button>
+                                <button onclick="setMentality('attack')" id="ment-attack" class="py-1.5 rounded-md text-xs font-extrabold text-slate-700 transition">
+                                    Tam Pres (-28)
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Birincil ve İkincil Eylem Hiyerarşisi -->
+                        <div class="flex items-center gap-2 pt-0.5">
+                            <button onclick="startMatchSimulation()" class="flex-1 py-3 sport-btn-green font-sport text-lg font-black uppercase tracking-wider flex items-center justify-center gap-2">
+                                <span id="btn-icon-pitch"></span>
+                                <span>Sahaya Çık</span>
+                            </button>
+                            <button onclick="openQuickSimModal()" class="px-4 py-3 sport-btn-cream font-sport text-sm font-extrabold uppercase tracking-wider flex items-center justify-center gap-1.5 shrink-0" title="Maçı Hızlı Simüle Et">
+                                <span id="btn-icon-sim"></span>
+                                <span>Simüle Et</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Oyuncu Mevcut Durumu & Teknik Kapasite (Gökkuşağı renkleri kaldırıldı, temiz barlı yapı) -->
+                <div class="board-panel p-3.5">
+                    <div class="flex justify-between items-center pb-2 mb-2.5 border-b border-[#143321]/15">
+                        <div>
+                            <h3 class="text-xs font-black text-[#143321] uppercase tracking-wide">Teknik Kapasite & Hazırlık</h3>
+                            <p class="text-[11px] font-bold text-slate-500">Yeteneklerin maç içi çark dilimlerini doğrudan büyütür</p>
+                        </div>
+                        <button onclick="switchGameTab('training')" class="px-2.5 py-1 rounded bg-[#143321] text-[#eab308] text-[11px] font-extrabold flex items-center gap-1">
+                            <span>Antrenmana Git</span>
+                            <span>→</span>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-x-4 gap-y-2.5 text-xs">
+                        <div>
+                            <div class="flex justify-between items-baseline mb-1">
+                                <span class="font-extrabold text-slate-700">Bitiricilik (Şut)</span>
+                                <span id="stat-val-shoot" class="font-led font-bold text-base text-[#143321]">60</span>
+                            </div>
+                            <div class="w-full h-1.5 bg-[#dfd9c3] rounded-full overflow-hidden">
+                                <div id="stat-bar-shoot" class="h-full bg-[#16a34a]" style="width: 60%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between items-baseline mb-1">
+                                <span class="font-extrabold text-slate-700">Vizyon (Pas)</span>
+                                <span id="stat-val-pass" class="font-led font-bold text-base text-[#143321]">60</span>
+                            </div>
+                            <div class="w-full h-1.5 bg-[#dfd9c3] rounded-full overflow-hidden">
+                                <div id="stat-bar-pass" class="h-full bg-[#16a34a]" style="width: 60%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between items-baseline mb-1">
+                                <span class="font-extrabold text-slate-700">Top Sürme</span>
+                                <span id="stat-val-dribble" class="font-led font-bold text-base text-[#143321]">60</span>
+                            </div>
+                            <div class="w-full h-1.5 bg-[#dfd9c3] rounded-full overflow-hidden">
+                                <div id="stat-bar-dribble" class="h-full bg-[#16a34a]" style="width: 60%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between items-baseline mb-1">
+                                <span class="font-extrabold text-slate-700">Dayanıklılık</span>
+                                <span id="stat-val-physic" class="font-led font-bold text-base text-[#143321]">60</span>
+                            </div>
+                            <div class="w-full h-1.5 bg-[#dfd9c3] rounded-full overflow-hidden">
+                                <div id="stat-bar-physic" class="h-full bg-[#16a34a]" style="width: 60%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEKME A-2: AYRI ANTRENMAN MERKEZİ (GELECEKTEKİ MİNİGAME ALTYAPISIYLA) -->
+            <div id="tab-content-training" class="hidden space-y-3 animate-screen">
+                
+                <!-- Üst Bilgi & Haftalık Hak Durumu -->
+                <div class="board-panel p-3 flex items-center justify-between bg-[#143321] text-white">
+                    <div>
+                        <h2 class="font-sport text-xl font-black tracking-wide text-[#eab308] uppercase leading-none">Kulüp Antrenman Tesisleri</h2>
+                        <p class="text-xs text-emerald-100/90 font-bold mt-0.5">Geliştirmek istediğin istasyonu seç ve sahaya in.</p>
+                    </div>
+                    <span id="hub-train-badge" class="font-led text-[11px] font-bold px-2.5 py-1 rounded bg-[#eab308] text-[#07190e] shrink-0">1 HAKKIN VAR</span>
+                </div>
+
+                <!-- MİNİGAME SAHNESİ KAPSAYICISI (Gelecekteki Şut/Pas/Çalım/Fizik Minigame'leri Buraya Yüklenir) -->
+                <div class="board-panel overflow-hidden">
+                    <div class="board-header flex justify-between items-center">
+                        <span id="training-stage-title" class="font-sport text-sm font-bold uppercase tracking-wider text-[#eab308]">İSTASYON 1: BİTİRİCİLİK & ŞUT PARKURU</span>
+                        <span id="training-stage-stat" class="font-led text-xs font-bold text-emerald-300">MEVCUT ŞUT: 60</span>
+                    </div>
+
+                    <!-- Minigame Canvas / Etkileşim Alanı -->
+                    <div id="minigame-stage-container" class="relative bg-[#195c31] h-40 flex flex-col items-center justify-center p-4 text-center border-b-2 border-[#143321] overflow-hidden">
+                        <!-- Arka plan dekoratif ceza sahası çizgileri -->
+                        <svg class="absolute inset-0 w-full h-full opacity-20 pointer-events-none" viewBox="0 0 360 160" fill="none">
+                            <rect x="60" y="0" width="240" height="95" stroke="white" stroke-width="2"/>
+                            <rect x="120" y="0" width="120" height="38" stroke="white" stroke-width="2"/>
+                            <path d="M 135 95 A 45 45 0 0 0 225 95" stroke="white" stroke-width="2"/>
+                        </svg>
+
+                        <div id="minigame-preview-icon" class="w-11 h-11 rounded-full bg-[#143321] border-2 border-[#eab308] text-[#eab308] flex items-center justify-center mb-2 z-10"></div>
+                        <h4 id="minigame-preview-heading" class="font-sport text-xl font-black text-white uppercase tracking-wide z-10">Hedef Vuruşu & Frikik İstasyonu</h4>
+                        <p id="minigame-preview-desc" class="text-xs font-bold text-emerald-100 max-w-[280px] mt-0.5 z-10">
+                            Bitiricilik yeteneğini geliştirir ve ekstra Odak kazanma şansı sunar.
+                        </p>
+                        <div class="mt-2 flex items-center gap-3 text-[11px] font-black z-10">
+                            <span id="minigame-cost-pill" class="px-2 py-0.5 rounded bg-black/40 text-amber-300 border border-amber-400/30">Maliyet: -15 Kondisyon</span>
+                            <span id="minigame-reward-pill" class="px-2 py-0.5 rounded bg-black/40 text-emerald-300 border border-emerald-400/30">Odak: Şut Gelişimi</span>
+                        </div>
+                    </div>
+
+                    <!-- Seçili İstasyonu Başlatma Butonu -->
+                    <div class="p-3 bg-[#f5f1e4] flex items-center justify-between gap-3">
+                        <div class="text-xs">
+                            <span class="font-extrabold text-[#143321] block">İdmana Hazır mısın?</span>
+                            <span id="training-trust-hint" class="text-[11px] font-bold text-slate-600">Haftalık bireysel gelişim hakkını kullanır.</span>
+                        </div>
+                        <button id="btn-launch-selected-drill" onclick="launchSelectedTrainingStation()" class="px-5 py-2.5 sport-btn-green font-sport text-base font-black uppercase tracking-wider shrink-0">
+                            İDMANA BAŞLA
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 4 TEMEL ÖZELLİK İSTASYONU SEÇİCİ (Tek Renk Sistemi, Kontrollü Vurgu) -->
+                <div class="board-panel p-3">
+                    <div class="text-[11px] font-black uppercase tracking-wider text-slate-600 mb-2">Antrenman İstasyonu Seç (4 Temel Özellik)</div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="selectTrainingStation('shooting')" id="station-btn-shooting" class="train-drill-btn p-2.5 rounded-lg bg-[#143321] text-white border-2 border-[#eab308] text-left transition flex items-center justify-between">
+                            <div>
+                                <div class="font-sport text-sm font-black uppercase text-[#eab308]">1. Bitiricilik (Şut)</div>
+                                <div class="text-[10px] font-bold text-emerald-100">-15 Kond • Şut & Odak</div>
+                            </div>
+                            <span id="station-stat-shoot" class="font-led text-sm font-bold text-white">60</span>
+                        </button>
+
+                        <button onclick="selectTrainingStation('playmaking')" id="station-btn-playmaking" class="train-drill-btn p-2.5 rounded-lg bg-[#e6e0cc] text-[#143321] border-2 border-[#143321]/30 text-left transition flex items-center justify-between">
+                            <div>
+                                <div class="font-sport text-sm font-black uppercase">2. Vizyon (Pas)</div>
+                                <div class="text-[10px] font-bold text-slate-600">-15 Kond • Pas & +5 Güven</div>
+                            </div>
+                            <span id="station-stat-pass" class="font-led text-sm font-bold text-[#143321]">60</span>
+                        </button>
+
+                        <button onclick="selectTrainingStation('dribbling')" id="station-btn-dribbling" class="train-drill-btn p-2.5 rounded-lg bg-[#e6e0cc] text-[#143321] border-2 border-[#143321]/30 text-left transition flex items-center justify-between">
+                            <div>
+                                <div class="font-sport text-sm font-black uppercase">3. Top Sürme</div>
+                                <div class="text-[10px] font-bold text-slate-600">-15 Kond • Çalım & Hız</div>
+                            </div>
+                            <span id="station-stat-drib" class="font-led text-sm font-bold text-[#143321]">60</span>
+                        </button>
+
+                        <button onclick="selectTrainingStation('heavy_camp')" id="station-btn-heavy_camp" class="train-drill-btn p-2.5 rounded-lg bg-[#e6e0cc] text-[#143321] border-2 border-[#143321]/30 text-left transition flex items-center justify-between">
+                            <div>
+                                <div class="font-sport text-sm font-black uppercase">4. Fizik & Kamp</div>
+                                <div class="text-[10px] font-bold text-slate-600">-26 Kond • +14 Güven & Fizik</div>
+                            </div>
+                            <span id="station-stat-phys" class="font-led text-sm font-bold text-[#143321]">60</span>
+                        </button>
+                    </div>
+
+                    <!-- Dinlenme / Fizyoterapi Ayrılmış Sakin Satır -->
+                    <div class="mt-2.5 pt-2.5 border-t border-[#143321]/15 flex items-center justify-between">
+                        <div>
+                            <span class="text-xs font-extrabold text-[#143321] block">Yorgun musun?</span>
+                            <span class="text-[11px] font-bold text-slate-600">İdman yerine fizyoterapiye girerek enerji topla.</span>
+                        </div>
+                        <button onclick="restBeforeMatch()" class="train-drill-btn px-3.5 py-2 sport-btn-cream text-xs font-black uppercase shrink-0">
+                            Dinlen (+35 Kond, +1 Odak)
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEKME B: CANLI MAÇ EKRANI -->
+            <div id="tab-content-match" class="hidden space-y-3 animate-screen">
+                <div class="board-panel overflow-hidden">
+                    <div class="board-header flex justify-between items-center">
+                        <span id="live-role-indicator" class="font-sport text-sm text-[#eab308] font-black uppercase">SAHADASIN (İLK 11)</span>
+                        <span id="match-live-min" class="px-2.5 py-0.5 bg-red-600 text-white font-led font-bold text-xs">1'</span>
+                    </div>
+                    <div class="p-3 bg-[#0f291a] text-white">
+                        <div class="grid grid-cols-7 items-center py-2 bg-[#091910] border-2 border-white/20 px-2">
+                            <div class="col-span-3 flex items-center justify-end gap-2">
+                                <span id="live-home-name" class="font-sport text-base font-black uppercase text-white truncate">Gençlerbirliği</span>
+                                <span id="live-home-crest"></span>
+                            </div>
+                            <div class="col-span-1 font-led font-bold text-2xl text-[#eab308] text-center tracking-wider">
+                                <span id="live-home-score">0</span>-<span id="live-away-score">0</span>
+                            </div>
+                            <div class="col-span-3 flex items-center justify-start gap-2">
+                                <span id="live-away-crest"></span>
+                                <span id="live-away-name" class="font-sport text-base font-black uppercase text-white truncate">Fenerbahçe</span>
+                            </div>
+                        </div>
+                        <div class="flex justify-between text-xs text-emerald-100 font-bold mt-2 pt-2 border-t border-white/15">
+                            <span>MAÇ REYTİNGİN: <strong id="live-player-rating" class="font-led text-[#eab308] font-bold">6.5</strong></span>
+                            <span id="live-player-stats" class="font-led text-white font-bold">0 GOL • 0 ASİST</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2D CANLI SAHA -->
+                <div id="pitch-card-wrapper" class="board-panel p-2 bg-[#0f291a] text-white">
+                    <div class="flex justify-between items-center text-[11px] px-1 mb-1.5">
+                        <span id="pitch-attack-status" class="font-sport text-sm font-black text-[#eab308] uppercase">Santra Yapıldı</span>
+                        <span class="text-emerald-200 font-bold text-[10px]">Sarı Halka: Sen</span>
+                    </div>
+                    <canvas id="tacticalPitchCanvas" width="380" height="220" class="w-full border-2 border-white block"></canvas>
+                </div>
+
+                <!-- Spiker -->
+                <div class="board-panel overflow-hidden flex flex-col h-44">
+                    <div class="board-header text-xs font-sport font-black uppercase tracking-wider">
+                        STADYUM ANLATIMI & DAKİKA RAPORU
+                    </div>
+                    <div id="match-feed-list" class="flex-1 overflow-y-auto p-2.5 space-y-1.5 text-xs font-bold"></div>
+                </div>
+
+                <button id="btn-end-match" onclick="finishMatchAndSave()" class="hidden w-full py-3.5 sport-btn-gold font-sport text-lg font-black uppercase tracking-wider">
+                    MAÇI TAMAMLA VE HAFTAYI BİTİR →
+                </button>
+            </div>
+
+            <!-- SEKME C: PUAN DURUMU -->
+            <div id="tab-content-league" class="hidden animate-screen">
+                <div class="board-panel overflow-hidden">
+                    <div class="board-header flex justify-between items-center">
+                        <span class="font-sport text-base font-black uppercase tracking-wider text-[#eab308]">LİG PUAN DURUMU</span>
+                        <span id="league-season-indicator" class="font-led text-xs text-white font-bold">SEZON 1</span>
+                    </div>
+                    <div class="overflow-x-auto bg-[#f3efe2]">
+                        <table class="w-full text-left border-collapse text-[11px] text-slate-900">
+                            <thead>
+                                <tr class="border-b-2 border-[#0f291a] text-[#0f291a] bg-[#e2dec9] font-black">
+                                    <th class="py-2 pl-2.5 pr-1">KULÜP</th>
+                                    <th class="py-2 px-1 text-center">OM</th>
+                                    <th class="py-2 px-1 text-center">G</th>
+                                    <th class="py-2 px-1 text-center">B</th>
+                                    <th class="py-2 px-1 text-center">M</th>
+                                    <th class="py-2 px-1 text-center">AV</th>
+                                    <th class="py-2 px-1.5 text-center font-black">P</th>
+                                    <th class="py-2 pr-2.5 pl-1 text-right">SON 5</th>
+                                </tr>
+                            </thead>
+                            <tbody id="standings-tbody" class="divide-y divide-slate-300 font-bold"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEKME D: KARİYER & KUPA MÜZESİ -->
+            <div id="tab-content-career" class="hidden space-y-3 animate-screen">
+                <div class="board-panel overflow-hidden">
+                    <div class="board-header flex justify-between items-center">
+                        <span class="font-sport text-base font-black uppercase tracking-wider text-[#eab308]">TÜM ZAMANLAR İSTATİSTİKLERİ</span>
+                        <span id="career-age-label" class="font-led text-xs text-white font-bold">YAŞ: 18</span>
+                    </div>
+                    <div class="p-3 grid grid-cols-4 gap-2 text-center">
+                        <div class="bg-[#e6e0cc] p-2 border-2 border-[#0f291a]">
+                            <span class="text-[10px] text-slate-600 font-black block uppercase">MAÇ</span>
+                            <span id="alltime-matches" class="font-led font-bold text-xl text-[#0f291a]">0</span>
+                        </div>
+                        <div class="bg-[#e6e0cc] p-2 border-2 border-[#0f291a]">
+                            <span class="text-[10px] text-slate-600 font-black block uppercase">GOL</span>
+                            <span id="alltime-goals" class="font-led font-bold text-xl text-emerald-800">0</span>
+                        </div>
+                        <div class="bg-[#e6e0cc] p-2 border-2 border-[#0f291a]">
+                            <span class="text-[10px] text-slate-600 font-black block uppercase">ASİST</span>
+                            <span id="alltime-assists" class="font-led font-bold text-xl text-blue-800">0</span>
+                        </div>
+                        <div class="bg-[#e6e0cc] p-2 border-2 border-[#0f291a]">
+                            <span class="text-[10px] text-slate-600 font-black block uppercase">KUPA</span>
+                            <span id="alltime-trophies" class="font-led font-bold text-xl text-amber-700">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="board-panel overflow-hidden">
+                    <div class="board-header">
+                        <span class="font-sport text-sm font-black uppercase tracking-wider text-white">KUPA MÜZESİ & BİREYSEL BAŞARIMLAR</span>
+                    </div>
+                    <div id="trophies-grid" class="p-3 grid grid-cols-2 gap-2 text-xs"></div>
+                </div>
+
+                <div class="board-panel overflow-hidden">
+                    <div class="board-header">
+                        <span class="font-sport text-sm font-black uppercase tracking-wider text-white">SEZON SEZON KARİYER GEÇMİŞİ</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-[11px] text-slate-800">
+                            <thead>
+                                <tr class="border-b-2 border-[#0f291a] bg-[#e2dec9] font-black">
+                                    <th class="py-2 pl-3">SEZON</th>
+                                    <th class="py-2">KULÜP</th>
+                                    <th class="py-2 text-center">MAÇ</th>
+                                    <th class="py-2 text-center">GOL</th>
+                                    <th class="py-2 text-center">ASİST</th>
+                                    <th class="py-2 pr-3 text-right">SIRA</th>
+                                </tr>
+                            </thead>
+                            <tbody id="season-history-tbody" class="divide-y divide-slate-300 font-bold"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- 4 SEKMELİ STADYUM ALT NAVİGASYONU -->
+        <nav id="game-bottom-nav" class="grid grid-cols-4 bg-[#091910] border-t-4 border-[#0f291a] divide-x divide-[#1e3f2b]">
+            <button onclick="switchGameTab('hub')" id="nav-btn-hub" class="py-2.5 bg-[#183d28] border-t-4 border-t-[#eab308] text-[#eab308] font-sport text-xs font-black uppercase tracking-wider flex flex-col items-center justify-center gap-0.5">
+                <span id="nav-icon-hub"></span>
+                <span>Soyunma Odası</span>
+            </button>
+            <button onclick="switchGameTab('training')" id="nav-btn-training" class="py-2.5 bg-[#091910] border-t-4 border-t-transparent text-emerald-100/70 font-sport text-xs font-bold uppercase tracking-wider flex flex-col items-center justify-center gap-0.5">
+                <span id="nav-icon-training"></span>
+                <span>Antrenman</span>
+            </button>
+            <button onclick="switchGameTab('league')" id="nav-btn-league" class="py-2.5 bg-[#091910] border-t-4 border-t-transparent text-emerald-100/70 font-sport text-xs font-bold uppercase tracking-wider flex flex-col items-center justify-center gap-0.5">
+                <span id="nav-icon-league"></span>
+                <span>Puan Tablosu</span>
+            </button>
+            <button onclick="switchGameTab('career')" id="nav-btn-career" class="py-2.5 bg-[#091910] border-t-4 border-t-transparent text-emerald-100/70 font-sport text-xs font-bold uppercase tracking-wider flex flex-col items-center justify-center gap-0.5">
+                <span id="nav-icon-career"></span>
+                <span>Müzem</span>
+            </button>
+        </nav>
+
+        <!-- ======================================================= -->
+        <!-- MODAL 1: MAÇ İÇİ POZİSYON, PENALTI & ANTRENMAN ÇARKI    -->
+        <!-- ======================================================= -->
+        <div id="action-wheel-modal" class="hidden absolute inset-0 z-40 bg-black/80 flex items-center justify-center p-4">
+            <div class="board-panel w-full overflow-hidden flex flex-col items-center animate-screen">
+                <div class="board-header w-full flex justify-between items-center">
+                    <span id="modal-badge" class="font-sport text-sm font-black uppercase text-[#eab308]">KRİTİK POZİSYON</span>
+                    <span id="modal-min-text" class="font-led text-sm font-bold text-red-400">42'</span>
+                </div>
+                <div class="p-4 w-full flex flex-col items-center">
+                    <p id="modal-desc-text" class="text-xs text-slate-800 font-extrabold text-center mb-2 min-h-[30px]">
+                        Ceza sahası önünde topla buluştun! Kararını ver.
+                    </p>
+
+                    <div class="relative flex items-center justify-center my-1">
+                        <div id="action-wheel-pointer" class="absolute -top-3 z-10 w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-t-[20px] border-t-[#0f291a] transition-transform duration-75"></div>
+                        <canvas id="actionWheelCanvas" width="245" height="245" class="rounded-full border-4 border-[#0f291a]"></canvas>
+                        <div class="absolute w-10 h-10 rounded-full bg-[#f3efe2] border-4 border-[#0f291a] flex items-center justify-center text-[#0f291a]" id="action-wheel-center-icon"></div>
+                    </div>
+
+                    <div id="modal-player-controls" class="w-full my-2 space-y-2">
+                        <div class="grid grid-cols-3 gap-1.5">
+                            <button onclick="setMatchActionType('shoot')" id="act-btn-shoot" class="py-1.5 px-1 border-2 border-[#0f291a] bg-[#16a34a] font-sport text-sm font-black uppercase text-white">
+                                ŞUT ÇEK
+                                <span class="block font-sans text-[9px] font-bold opacity-90">Bitiricilik</span>
+                            </button>
+                            <button onclick="setMatchActionType('pass')" id="act-btn-pass" class="py-1.5 px-1 border-2 border-[#0f291a] bg-[#e6e0cc] font-sport text-sm font-black uppercase text-slate-800">
+                                KİLİT PAS
+                                <span class="block font-sans text-[9px] font-bold opacity-75">Vizyon</span>
+                            </button>
+                            <button onclick="setMatchActionType('dribble')" id="act-btn-dribble" class="py-1.5 px-1 border-2 border-[#0f291a] bg-[#e6e0cc] font-sport text-sm font-black uppercase text-slate-800">
+                                ÇALIM DENE
+                                <span class="block font-sans text-[9px] font-bold opacity-75">Top Sürme</span>
+                            </button>
+                        </div>
+                        <button onclick="spendFocusOnWheel()" id="btn-spend-focus" class="w-full py-2 px-3 sport-btn-gold text-xs font-black flex justify-between items-center uppercase">
+                            <span>SOĞUKKANLILIK KULLAN (BAŞARIYI BÜYÜT)</span>
+                            <span class="font-led">-1 ODAK</span>
+                        </button>
+                    </div>
+
+                    <div class="w-full flex gap-2 mt-1">
+                        <button id="btn-spin-action" onclick="spinActionWheel()" class="flex-1 py-3 sport-btn-green font-sport text-base font-black uppercase tracking-wider">
+                            ÇARKI ÇEVİR!
+                        </button>
+                        <button id="btn-continue-action" onclick="closeActionModal()" class="hidden flex-1 py-3 sport-btn-gold font-sport text-base font-black uppercase tracking-wider">
+                            DEVAM ET →
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ======================================================= -->
+        <!-- MODAL 2: HIZLI MAÇ SİMÜLASYONU                          -->
+        <!-- ======================================================= -->
+        <div id="sim-wheel-modal" class="hidden absolute inset-0 z-40 bg-black/80 flex items-center justify-center p-4">
+            <div class="board-panel w-full overflow-hidden flex flex-col items-center animate-screen">
+                <div class="board-header w-full flex justify-between items-center">
+                    <span id="sim-step-badge" class="font-sport text-sm font-black uppercase text-[#eab308]">1. ÇARK: MAÇ SONUCU</span>
+                    <button id="btn-cancel-sim" onclick="closeQuickSimModal()" class="text-xs text-red-400 font-black uppercase">✕ İPTAL</button>
+                </div>
+                <div class="p-4 w-full flex flex-col items-center">
+                    <p id="sim-desc-text" class="text-xs text-slate-800 font-extrabold text-center mb-2 min-h-[32px]">
+                        Takım güçlerine göre maç sonucu çarkı dönüyor.
+                    </p>
+
+                    <div class="relative flex items-center justify-center my-1.5">
+                        <div id="sim-wheel-pointer" class="absolute -top-3 z-10 w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-t-[20px] border-t-[#0f291a] transition-transform duration-75"></div>
+                        <canvas id="simWheelCanvas" width="245" height="245" class="rounded-full border-4 border-[#0f291a]"></canvas>
+                        <div class="absolute w-11 h-11 rounded-full bg-[#f3efe2] border-4 border-[#0f291a] flex items-center justify-center text-[#0f291a]" id="sim-wheel-center-icon"></div>
+                    </div>
+
+                    <div class="w-full flex gap-2 mt-3">
+                        <button id="btn-spin-sim-1" onclick="spinQuickSimWheel(1)" class="flex-1 py-3 sport-btn-green font-sport text-base font-black uppercase tracking-wider">
+                            MAÇ SONUCU ÇARKINI ÇEVİR
+                        </button>
+                        <button id="btn-Next-sim-2" onclick="setupQuickSimStep2()" class="hidden flex-1 py-3 sport-btn-gold font-sport text-base font-black uppercase tracking-wider">
+                            2. ÇARK: SKOR KATKISINA GEÇ →
+                        </button>
+                        <button id="btn-spin-sim-2" onclick="spinQuickSimWheel(2)" class="hidden flex-1 py-3 sport-btn-green font-sport text-base font-black uppercase tracking-wider">
+                            SKOR KATKISI ÇARKINI ÇEVİR
+                        </button>
+                        <button id="btn-finish-sim" onclick="finalizeQuickSim()" class="hidden flex-1 py-3 sport-btn-gold font-sport text-base font-black uppercase tracking-wider">
+                            HAFTAYI TAMAMLA →
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ======================================================= -->
+        <!-- MODAL 3: HAFTALIK KAOS & KARAR KARTLARI (İKİ KARTLI SVG)-->
+        <!-- ======================================================= -->
+        <div id="event-decision-modal" class="hidden absolute inset-0 z-50 bg-black/85 flex items-center justify-center p-3.5">
+            <div class="board-panel w-full overflow-hidden animate-screen">
+                <div class="board-header flex justify-between items-center">
+                    <span id="event-category-tag" class="font-sport text-sm font-black uppercase tracking-widest text-[#eab308]">FLAŞ GÜNDEM • BASIN & KRİZ</span>
+                    <span id="event-week-tag" class="font-led text-xs text-emerald-200">HAFTA 3</span>
+                </div>
+
+                <div class="p-3.5 space-y-3">
+                    <!-- Olay Başlığı ve Açıklaması -->
+                    <div class="bg-[#e6e0cc] border-2 border-[#0f291a] p-3 text-center">
+                        <h3 id="event-title" class="font-sport text-2xl font-black uppercase text-[#0f291a] leading-none">GECE KULÜBÜ SKANDALI!</h3>
+                        <p id="event-desc" class="text-xs font-extrabold text-slate-700 mt-1.5 leading-snug">
+                            Kritik maç öncesi gece geç saatlerde görüntülendin! Basın önünde nasıl bir tavır sergileyeceksin?
+                        </p>
+                    </div>
+
+                    <!-- YAN YANA İKİ ÖZEL SVG SEÇİM KARTI -->
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <!-- A KARTI -->
+                        <button onclick="resolveWeeklyEventChoice('A')" class="group bg-white hover:bg-[#ecfdf5] border-3 border-2 border-[#0f291a] p-2.5 flex flex-col items-center text-center shadow-[3px_3px_0_#0f291a] active:translate-y-1 transition">
+                            <div id="event-svg-a" class="w-full h-24 bg-[#0f291a] border-2 border-[#07190e] flex items-center justify-center mb-2 overflow-hidden"></div>
+                            <span id="event-title-a" class="font-sport text-base font-black uppercase text-[#0f291a] leading-tight">ÖZÜR DİLE</span>
+                            <span id="event-sub-a" class="text-[10px] font-bold text-slate-600 mt-1 leading-tight">"Hata yaptım, tesislerde çalışacağım."</span>
+                            <div id="event-effect-a" class="mt-auto pt-2 w-full border-t border-slate-300 text-[10px] font-black text-emerald-700 uppercase">
+                                +10 Hoca Güveni • -1 Odak
+                            </div>
+                        </button>
+
+                        <!-- B KARTI -->
+                        <button onclick="resolveWeeklyEventChoice('B')" class="group bg-white hover:bg-[#fefce8] border-2 border-[#0f291a] p-2.5 flex flex-col items-center text-center shadow-[3px_3px_0_#0f291a] active:translate-y-1 transition">
+                            <div id="event-svg-b" class="w-full h-24 bg-[#0f291a] border-2 border-[#07190e] flex items-center justify-center mb-2 overflow-hidden"></div>
+                            <span id="event-title-b" class="font-sport text-base font-black uppercase text-red-700 leading-tight">MEYDAN OKU!</span>
+                            <span id="event-sub-b" class="text-[10px] font-bold text-slate-600 mt-1 leading-tight">"Özel hayatım kimseyi ilgilendirmez, sahada konuşurum!"</span>
+                            <div id="event-effect-b" class="mt-auto pt-2 w-full border-t border-slate-300 text-[10px] font-black text-amber-700 uppercase">
+                                -10 Güven • Maçta Gol Şansı +%12!
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </section>
+
+</div>
+
+<script src="data.js"></script>
+<script src="game.js"></script>
+<script src="ui_stage1.js"></script>
+<script src="ui_stage2.js"></script>
+</body>
+</html>
