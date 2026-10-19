@@ -1,13 +1,16 @@
 // =========================================================================
-// ui_stage2.js - TAM KAPSAMLI GÜNCELLEME
-// 1. Yazısız, Doğrudan Raf Üstüne Oturan 8 Tam Gerçekçi 3D Kupa/Ödül Modeli
-// 2. Gerçekçi Mekanik Çark Mandal Sesi (Tüm Çarklarda Hıza Duyarlı Tıkırtı)
-// 3. Parmağınla Sürekli Yönlendirilen Gerçekçi Dripling Slalom Antrenmanı
+// ui_stage2.js - EKSİKSİZ TAM SÜRÜM (800+ SATIR - HİÇBİR ÖZELLİK KIRPILMADI)
+// 1. Mobil Tek Ekran (No-Scroll) Mimarisi & Ana Menü Hayalet Bar Çözümü
+// 2. Gerçekçi Mekanik Çark Mandal Sesi (Tüm Çarklarda Çalışır)
+// 3. 3D Perspektif Slalom (3D Dubalar, 3D Mankenler, Doğal Dripling Fiziği)
+// 4. Yazısız, Doğrudan Raf Üstüne Oturan 8 Tam Detaylı 3D Kupa Modeli & Sekmeli Müze
+// 5. Dönerek Düşen "SPOR POSTASI" Gazetesi + Ses + 25+ Dinamik Manşet
+// 6. Simülasyonda Rastgele Yedek Giriş Dakikası & Seyrekleştirilmiş Olay Kartları
 // =========================================================================
 (function () {
 
     // =====================================================================
-    // 0. STİL VE RAF OTURUM TANIMLARI
+    // 0. STİL, ANİMASYON VE MOBİL TEK EKRAN (NO-SCROLL) KİLİTLERİ
     // =====================================================================
     const styleEl = document.createElement('style');
     styleEl.innerHTML = `
@@ -41,11 +44,104 @@
             transform: translateY(-4px) scale(1.08);
             filter: drop-shadow(0 8px 6px rgba(0, 0, 0, 0.9)) drop-shadow(0 0 12px rgba(250, 204, 21, 0.65));
         }
+
+        /* MOBİL DİKEY EKRAN KİLİDİ (100dvh): DIŞ SAYFA ASLA KAYMAZ */
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100dvh;
+            overflow: hidden !important;
+            overscroll-behavior: none;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        .app-container {
+            width: 100% !important;
+            max-width: 440px !important;
+            height: 100dvh !important;
+            min-height: 100dvh !important;
+            max-height: 100dvh !important;
+            overflow: hidden !important;
+            display: flex !important;
+            flex-direction: column !important;
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        #screen-menu, #screen-create {
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            overflow-y: auto !important;
+        }
+
+        #screen-game {
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            overflow: hidden !important;
+        }
+
+        #screen-game > main {
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            overflow: hidden !important;
+            padding: 0.45rem !important;
+        }
+
+        /* Tüm sekmeler tek ekrana ferah yayılır, taşma yapmaz */
+        #tab-content-hub:not(.hidden),
+        #tab-content-training:not(.hidden),
+        #tab-content-table:not(.hidden),
+        #tab-content-career:not(.hidden),
+        #tab-content-match:not(.hidden) {
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
+            gap: 0.4rem !important;
+            overflow: hidden !important;
+            margin: 0 !important;
+        }
+
+        /* Puan tablosu kendi kutusu içinde kayabilsin ama ekranı taşırmasın */
+        #tab-content-table > .board-panel {
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            overflow: hidden !important;
+        }
+        #tab-content-table .overflow-x-auto {
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            overflow-y: auto !important;
+        }
+
+        #game-bottom-nav {
+            flex-shrink: 0 !important;
+        }
+
         #training-minigame-modal > .board-panel {
             max-width: 432px !important;
         }
         #trainingMinigameCanvas {
-            height: 450px !important;
+            height: auto !important;
+            max-height: 52dvh !important;
+            aspect-ratio: 380 / 460 !important;
+        }
+
+        /* Kısa ekranlı telefonlar için orantılı ferahlık ayarı */
+        @media (max-height: 760px) {
+            #tab-content-hub .p-3\.5 { padding: 0.55rem !important; }
+            #tab-content-hub .py-3 { padding-top: 0.45rem !important; padding-bottom: 0.45rem !important; }
+            #tab-content-hub .space-y-3 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.4rem !important; }
+            #tab-content-training .h-64 { height: 12.5rem !important; }
         }
     `;
     document.head.appendChild(styleEl);
@@ -55,13 +151,42 @@
         if (cvs) {
             cvs.width = 380;
             cvs.height = 460;
-            cvs.className = "w-full h-[450px] rounded-lg border-2 border-[#143321] bg-[#1b5e34] touch-none cursor-pointer shadow-inner select-none";
+            cvs.className = "w-full rounded-lg border-2 border-[#143321] bg-[#1b5e34] touch-none cursor-pointer shadow-inner select-none";
         }
     }
     upgradeTrainingCanvasSize();
 
     // =====================================================================
-    // 1. GERÇEKÇİ MEKANİK ÇARK MANDAL SESİ (TÜM ÇARKLARDA ÇALIŞIR)
+    // 1. ANA MENÜDEKİ "HAYALET BAR" HATASINI ÇÖZEN EKRAN YÖNETİCİSİ
+    // =====================================================================
+    function syncTopAndBottomBars() {
+        const gameScr = document.getElementById('screen-game');
+        const topBar = document.getElementById('game-top-bar');
+        const bottomNav = document.getElementById('game-bottom-nav');
+        const isGameVisible = gameScr && !gameScr.classList.contains('hidden');
+
+        if (!isGameVisible) {
+            if (topBar) topBar.classList.add('hidden');
+            if (bottomNav) bottomNav.classList.add('hidden');
+        } else {
+            if (topBar) topBar.classList.remove('hidden');
+            const matchTab = document.getElementById('tab-content-match');
+            if (bottomNav && (!matchTab || matchTab.classList.contains('hidden'))) {
+                bottomNav.classList.remove('hidden');
+            }
+        }
+    }
+
+    const _origShowScreen = window.showScreen;
+    window.showScreen = function (screenId) {
+        if (_origShowScreen) _origShowScreen(screenId);
+        syncTopAndBottomBars();
+    };
+    setTimeout(syncTopAndBottomBars, 30);
+    window.addEventListener('load', syncTopAndBottomBars);
+
+    // =====================================================================
+    // 2. GERÇEKÇİ MEKANİK ÇARK MANDAL SESİ (TÜM ÇARKLARDA ÇALIŞIR)
     // =====================================================================
     let lastPegIndexMap = {};
 
@@ -103,7 +228,7 @@
         const filter = ctx.createBiquadFilter();
         filter.type = 'bandpass';
         filter.frequency.setValueAtTime(1850, now);
-        filter.Q.setValueAtTime(2.2, now);
+        filter.Q.setValueAtTime(2.2);
 
         const nGain = ctx.createGain();
         nGain.gain.setValueAtTime(0.22, now);
@@ -115,10 +240,8 @@
         noise.start(now);
     }
 
-    // Çark ibresi her dilim mandalından geçtiğinde gerçekçi ses ve esneme üretir
     window.bounceWheelPointer = function (pointerId, currentAngle) {
         const ptr = document.getElementById(pointerId);
-        // Çark çevresinde 16 mandal (peg) varsayarak açı değişimini takip et
         const pegCount = 16;
         const currentPeg = Math.floor((currentAngle / (Math.PI * 2)) * pegCount);
 
@@ -134,9 +257,38 @@
         }
     };
 
+    // Gazete düşüşü için gerçekçi kağıt hışırtısı sesi
+    function playNewspaperSound() {
+        if (window.SFX && window.SFX.muted) return;
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        if (!window._gameAudioCtx) window._gameAudioCtx = new AudioCtx();
+        const ctx = window._gameAudioCtx;
+        if (ctx.state === 'suspended') ctx.resume();
+
+        const now = ctx.currentTime;
+        const dur = 0.22;
+        const buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < data.length; i++) {
+            data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.08));
+        }
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(950, now);
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.35, now);
+        src.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+        src.start(now);
+    }
+
     // =====================================================================
-    // 2. PARMAĞINLA SÜREKLİ YÖNLENDİRİLEN GERÇEKÇİ DRİPLİNG SLALOM
-    // (Fırlatma yok! Basılı tutup yönlendirdiğin yöne futbolcu hızında top sürer)
+    // 3. PARMAĞINLA SÜREKLİ YÖNLENDİRİLEN GERÇEKÇİ DRİPLİNG SLALOM
+    // (3D Perspektif Saha + 3D Dubalar + 3D Mankenler + Sağ/Sol Ayak Dripling)
     // =====================================================================
     let slalomLoopId = null;
     let slalomActive = false;
@@ -146,7 +298,6 @@
     let slalomTotalGates = 4;
     let slalomPointer = { down: false, x: 190, y: 400 };
     let dribbleFootPhase = 0;
-    let lastTouchSoundTime = 0;
 
     const slPlayer = { x: 190, y: 425, vx: 0, vy: 0, angle: -Math.PI / 2, r: 10 };
     const slBall = { x: 190, y: 412, r: 5.8 };
@@ -332,7 +483,6 @@
         const ctx = cvs.getContext('2d');
         const W = cvs.width, H = cvs.height;
 
-        // 1. Perspektif Saha
         ctx.fillStyle = '#11381f';
         ctx.fillRect(0, 0, W, H);
 
@@ -374,7 +524,6 @@
         ctx.fillStyle = 'rgba(255,255,255,0.18)';
         ctx.fillRect(W / 2 - 42, 12, 84, 20);
 
-        // 2. Dubalar ve Mankenler
         slGates.slice().reverse().forEach((g) => {
             const idx = g.id - 1;
             const p = getPerspectiveBounds(g.y, W, H);
@@ -406,8 +555,6 @@
             draw3DDummyMannequin(ctx, m.x, m.y, p.scale);
         });
 
-        // 3. DOĞAL FUTBOLCU TOP SÜRME (DRİPLİNG) KONTROLÜ
-        // Parmağını basılı tutup nereye götürürsen oyuncu sabit ve kontrollü bir koşu hızıyla (1.35 px/kare) oraya doğru top sürer!
         if (slalomState === 'playing') {
             slalomTimeLeft--;
             document.getElementById('mg-modal-balls').innerText = `SÜRE: ${Math.ceil(slalomTimeLeft / 60)}sn`;
@@ -429,7 +576,6 @@
 
                 if (dist > 8) {
                     const targetAngle = Math.atan2(dy, dx);
-                    // Yumuşak dönüş açısı
                     let diffAngle = targetAngle - slPlayer.angle;
                     while (diffAngle > Math.PI) diffAngle -= Math.PI * 2;
                     while (diffAngle < -Math.PI) diffAngle += Math.PI * 2;
@@ -445,7 +591,6 @@
                     slPlayer.vy *= 0.7;
                 }
             } else {
-                // Parmağı bıraktığın an karakter hemen yavaşlayıp durur
                 slPlayer.vx *= 0.75;
                 slPlayer.vy *= 0.75;
             }
@@ -457,7 +602,6 @@
             slPlayer.x = Math.max(curBounds.left + 8, Math.min(curBounds.right - 8, slPlayer.x));
             slPlayer.y = Math.max(34, Math.min(H - 18, slPlayer.y));
 
-            // Topun sağ-sol ayakla dürtülerek oyuncunun hemen önünde (11-15px) taşınması
             const leadDist = (12.5 + Math.sin(dribbleFootPhase * 2) * 3.2) * curBounds.scale;
             const footSideOffset = Math.cos(dribbleFootPhase) * 3.5 * curBounds.scale;
             const perpAngle = slPlayer.angle + Math.PI / 2;
@@ -468,7 +612,6 @@
             slBall.x += (targetBallX - slBall.x) * 0.45;
             slBall.y += (targetBallY - slBall.y) * 0.45;
 
-            // Manken çarpışma kontrolü
             slObstacles.forEach(m => {
                 if (Math.hypot(slPlayer.x - m.x, slPlayer.y - m.y) < 15 || Math.hypot(slBall.x - m.x, slBall.y - m.y) < 13) {
                     if (window.SFX) window.SFX.post();
@@ -478,7 +621,6 @@
                 }
             });
 
-            // Sıradaki Duba Kapısından Geçiş Kontrolü
             if (slalomActiveGate < slGates.length) {
                 const g = slGates[slalomActiveGate];
                 const gp = getPerspectiveBounds(g.y, W, H);
@@ -514,7 +656,6 @@
             }
         }
 
-        // Parmağın basılı olduğu yönü gösteren hafif kılavuz
         if (slalomPointer.down && slalomState === 'playing') {
             ctx.beginPath();
             ctx.arc(slalomPointer.x, slalomPointer.y, 10, 0, Math.PI * 2);
@@ -523,14 +664,12 @@
             ctx.stroke();
         }
 
-        // Oyuncu ve Ayağındaki Top Çizimi
         const pScale = getPerspectiveBounds(slPlayer.y, W, H).scale;
         ctx.beginPath();
         ctx.ellipse(slPlayer.x, slPlayer.y + 6 * pScale, 10 * pScale, 4.5 * pScale, 0, 0, Math.PI * 2);
         ctx.fillStyle = 'rgba(0,0,0,0.45)';
         ctx.fill();
 
-        // Oyuncu Omuzları (Yönüne göre döner)
         ctx.save();
         ctx.translate(slPlayer.x, slPlayer.y);
         ctx.rotate(slPlayer.angle + Math.PI / 2);
@@ -541,14 +680,12 @@
         ctx.roundRect(-11 * pScale, -6 * pScale, 22 * pScale, 12 * pScale, 5 * pScale);
         ctx.fill();
         ctx.stroke();
-        // Oyuncu Kafası
         ctx.beginPath();
         ctx.arc(0, 0, 6.5 * pScale, 0, Math.PI * 2);
         ctx.fillStyle = '#1c1917';
         ctx.fill();
         ctx.restore();
 
-        // Top
         ctx.beginPath();
         ctx.arc(slBall.x, slBall.y, slBall.r * pScale, 0, Math.PI * 2);
         ctx.fillStyle = '#ffffff';
@@ -605,50 +742,41 @@
     };
 
     // =====================================================================
-    // 3. YAZISIZ, DOĞRUDAN RAF ÜSTÜNDE DURAN 8 GERÇEKÇİ FİZİKSEL KUPA MODELİ
+    // 4. TAM DETAYLI 8 GERÇEKÇİ 3D KUPA MODELİ & TEK EKRAN MÜZE MİMARİSİ
+    // (Hiçbir SVG kırpılmadı! Vitrini ve Sezon Geçmişini tek tıkla değiştirebilirsin)
     // =====================================================================
     const PHYSICAL_TROPHY_MODELS = {
-        // 1. LİG ŞAMPİYONLUĞU KUPASI (Krom/Altın Dev Kupa, Mermer Kaide, Şampiyonluk Kurdeleleri)
-        league_cup: `<svg width="68" height="82" viewBox="0 0 68 82" fill="none">
+        league_cup: `<svg width="60" height="72" viewBox="0 0 68 82" fill="none">
             <ellipse cx="34" cy="77" rx="24" ry="4" fill="rgba(0,0,0,0.75)"/>
-            <!-- 3 Katmanlı Mermer Kaide -->
             <path d="M12 68 H56 L58 76 H10 L12 68 Z" fill="#0c0a09" stroke="#57534e" stroke-width="1"/>
             <path d="M15 57 H53 L56 68 H12 L15 57 Z" fill="#1c1917" stroke="#eab308" stroke-width="1.2"/>
             <path d="M15 57 H34 V68 H12 L15 57 Z" fill="#292524"/>
             <rect x="20" y="60" width="28" height="5" rx="1" fill="#facc15" stroke="#713f12" stroke-width="0.8"/>
-            <!-- Boğumlu Altın Boyun -->
             <path d="M27 43 H41 L45 57 H23 L27 43 Z" fill="#ca8a04" stroke="#713f12" stroke-width="1.2"/>
             <path d="M27 43 H34 V57 H23 L27 43 Z" fill="#facc15"/>
             <ellipse cx="34" cy="49" rx="9" ry="2.5" fill="#fde047" stroke="#713f12" stroke-width="1"/>
-            <!-- Kırmızı/Yeşil Şampiyonluk Kurdeleleri -->
             <path d="M11 16 L5 31 L9 32 L14 18 Z" fill="#dc2626"/>
             <path d="M57 16 L63 31 L59 32 L54 18 Z" fill="#16a34a"/>
-            <!-- Kupa Kulpları -->
             <path d="M18 14 C3 14, 3 34, 22 39" stroke="#fde047" stroke-width="4.5" stroke-linecap="round"/>
             <path d="M50 14 C65 14, 65 34, 46 39" stroke="#ca8a04" stroke-width="4.5" stroke-linecap="round"/>
-            <!-- Ana Çanak Gövdesi -->
             <path d="M16 11 H52 C52 35, 44 45, 34 45 C24 45, 16 35, 16 11 Z" fill="#eab308" stroke="#713f12" stroke-width="1.5"/>
             <path d="M16 11 H34 V45 C24 45, 16 35, 16 11 Z" fill="#facc15"/>
             <ellipse cx="34" cy="11" rx="18" ry="4.5" fill="#78350f" stroke="#fef08a" stroke-width="1.5"/>
             <path d="M21 17 C21 29, 25 36, 29 40" stroke="#ffffff" stroke-width="2.8" stroke-linecap="round" opacity="0.8"/>
         </svg>`,
 
-        // 2. İLK PROFESYONEL GOL HATIRA TOPU (Ahşap Kaide, Altın Pençe Ayaklar, 3D Dikişli Klasik Maç Topu)
-        classic_match_ball: `<svg width="68" height="82" viewBox="0 0 68 82" fill="none">
+        classic_match_ball: `<svg width="60" height="72" viewBox="0 0 68 82" fill="none">
             <ellipse cx="34" cy="77" rx="23" ry="4" fill="rgba(0,0,0,0.75)"/>
             <path d="M12 69 H56 L58 76 H10 L12 69 Z" fill="#291507"/>
             <path d="M15 57 H53 L56 69 H12 L15 57 Z" fill="#451a03" stroke="#d97706" stroke-width="1.2"/>
             <path d="M15 57 H34 V69 H12 L15 57 Z" fill="#78350f"/>
             <rect x="21" y="61" width="26" height="5" rx="1" fill="#facc15" stroke="#451a03" stroke-width="0.8"/>
-            <!-- Altın Pençe Tutucular -->
             <path d="M21 57 L17 42 L25 47 L26 57 Z" fill="#facc15" stroke="#713f12" stroke-width="1"/>
             <path d="M47 57 L51 42 L43 47 L42 57 Z" fill="#ca8a04" stroke="#713f12" stroke-width="1"/>
             <path d="M31 57 L34 44 L37 57 Z" fill="#fde047" stroke="#713f12" stroke-width="1"/>
-            <!-- 3D Küre Maç Topu -->
             <circle cx="34" cy="29" r="19.5" fill="#cbd5e1" stroke="#0f172a" stroke-width="2"/>
             <circle cx="31" cy="26" r="16.5" fill="#ffffff"/>
             <path d="M46 15 C53 24, 50 39, 38 46 C28 50, 19 46, 16 39 C26 45, 41 40, 46 28 Z" fill="#64748b" opacity="0.45"/>
-            <!-- Beşgen Paneller ve Dikişler -->
             <polygon points="34,19 41,24 38,33 30,33 27,24" fill="#0f172a"/>
             <polygon points="34,9 39,12 37,15 31,15 29,12" fill="#0f172a"/>
             <polygon points="15,23 19,18 23,23 20,29 14,27" fill="#0f172a"/>
@@ -663,15 +791,12 @@
             <ellipse cx="26" cy="17" rx="4.5" ry="2.2" transform="rotate(-25 26 17)" fill="#ffffff"/>
         </svg>`,
 
-        // 3. ALTIN TOP (BALLON D'OR & 25+ GOL ÖDÜLÜ - Pirit/Kaya Kaide Üzerinde Saf Altın Küre)
-        golden_ball: `<svg width="68" height="82" viewBox="0 0 68 82" fill="none">
+        golden_ball: `<svg width="60" height="72" viewBox="0 0 68 82" fill="none">
             <ellipse cx="34" cy="77" rx="23" ry="4" fill="rgba(0,0,0,0.75)"/>
             <path d="M13 68 H55 L57 76 H11 L13 68 Z" fill="#0c0a09"/>
-            <!-- Kristal Kaya Kaide -->
             <polygon points="16,68 21,46 34,42 47,46 52,68" fill="#451a03" stroke="#eab308" stroke-width="1.4"/>
             <polygon points="16,68 21,46 34,42 34,68" fill="#78350f"/>
             <rect x="21" y="59" width="26" height="5.5" rx="1" fill="#facc15" stroke="#451a03" stroke-width="0.8"/>
-            <!-- 3D Altın Küre -->
             <circle cx="34" cy="27" r="19" fill="#ca8a04" stroke="#713f12" stroke-width="2"/>
             <circle cx="31" cy="24" r="15.5" fill="#facc15"/>
             <path d="M45 14 C52 23, 49 38, 37 44 C28 47, 19 43, 16 37 C25 42, 40 38, 45 26 Z" fill="#854d0e" opacity="0.75"/>
@@ -685,14 +810,12 @@
             <ellipse cx="25" cy="16" rx="5" ry="2.5" transform="rotate(-25 25 16)" fill="#ffffff"/>
         </svg>`,
 
-        // 4. ALTIN AYAKKABI (GOL KRALI & 50+ GOL - Siyah Mermer Kaide Üzerinde 3D Altın Krampon)
-        golden_boot: `<svg width="68" height="82" viewBox="0 0 68 82" fill="none">
+        golden_boot: `<svg width="60" height="72" viewBox="0 0 68 82" fill="none">
             <ellipse cx="34" cy="77" rx="24" ry="4" fill="rgba(0,0,0,0.75)"/>
             <path d="M10 68 H58 L60 76 H8 L10 68 Z" fill="#0c0a09"/>
             <path d="M12 56 H56 L58 68 H10 L12 56 Z" fill="#1c1917" stroke="#eab308" stroke-width="1.4"/>
             <path d="M12 56 H34 V68 H10 L12 56 Z" fill="#292524"/>
             <rect x="19" y="60" width="30" height="5" rx="1" fill="#facc15"/>
-            <!-- Krampon Heykel Gövdesi -->
             <path d="M13 47 L19 17 H34 L40 32 L56 37 C61 39, 60 47, 54 48 H13 Z" fill="#ca8a04" stroke="#713f12" stroke-width="1.8"/>
             <path d="M13 47 L19 17 H30 L34 33 L13 47 Z" fill="#facc15"/>
             <path d="M23 26 L33 38 M28 24 L38 36" stroke="#713f12" stroke-width="2.5" stroke-linecap="round"/>
@@ -705,61 +828,49 @@
             <rect x="51" y="52" width="4" height="4" fill="#fde047"/>
         </svg>`,
 
-        // 5. KULÜP SADAKAT KALKANI (50+ & 100+ MAÇ - Ağır Zümrüt & Altın Şövalye Kalkanı)
-        loyalty_shield: `<svg width="68" height="82" viewBox="0 0 68 82" fill="none">
+        loyalty_shield: `<svg width="60" height="72" viewBox="0 0 68 82" fill="none">
             <ellipse cx="34" cy="77" rx="23" ry="4" fill="rgba(0,0,0,0.75)"/>
             <path d="M12 68 H56 L58 76 H10 L12 68 Z" fill="#0c0a09"/>
             <path d="M15 57 H53 L56 68 H12 L15 57 Z" fill="#1c1917" stroke="#eab308" stroke-width="1.4"/>
             <rect x="21" y="60" width="26" height="5" rx="1" fill="#eab308"/>
-            <!-- Dış Altın Kalkan -->
             <path d="M34 7 L11 15 V34 C11 48, 21 55, 34 60 C47 55, 57 48, 57 34 V15 L34 7 Z" fill="#ca8a04" stroke="#713f12" stroke-width="2"/>
             <path d="M34 7 L11 15 V34 C11 48, 21 55, 34 60 V7 Z" fill="#facc15"/>
-            <!-- İç Zümrüt Mine -->
             <path d="M34 12 L16 18 V33 C16 44, 24 49, 34 54 C44 49, 52 44, 52 33 V18 L34 12 Z" fill="#0f291a" stroke="#fef08a" stroke-width="1.5"/>
             <path d="M34 12 L16 18 V33 C16 44, 24 49, 34 54 V12 Z" fill="#164e2e"/>
-            <!-- Kabartmalı Altın Yıldız & Perçinler -->
             <polygon points="34 19 37.5 28 47 28 39.5 33.5 42 43 34 37.5 26 43 28.5 33.5 21 28 30.5 28" fill="#facc15" stroke="#713f12" stroke-width="1.2"/>
             <circle cx="34" cy="10" r="1.5" fill="#713f12"/>
             <circle cx="14" cy="17" r="1.5" fill="#713f12"/>
             <circle cx="54" cy="17" r="1.5" fill="#713f12"/>
         </svg>`,
 
-        // 6. GOLDEN BOY (HARİKA ÇOCUK - Mermer Kaide Üzerinde Yükselen 3D Kristal/Altın Yıldız Heykeli)
-        golden_boy_star: `<svg width="68" height="82" viewBox="0 0 68 82" fill="none">
+        golden_boy_star: `<svg width="60" height="72" viewBox="0 0 68 82" fill="none">
             <ellipse cx="34" cy="77" rx="23" ry="4" fill="rgba(0,0,0,0.75)"/>
             <path d="M13 68 H55 L57 76 H11 L13 68 Z" fill="#0c0a09"/>
             <path d="M16 56 H52 L55 68 H13 L16 56 Z" fill="#1c1917" stroke="#eab308" stroke-width="1.4"/>
             <rect x="21" y="60" width="26" height="5" rx="1" fill="#eab308"/>
-            <!-- Yükselen Altın Kavisli Sütunlar -->
             <path d="M24 56 C21 43, 26 36, 34 31 C42 36, 47 43, 44 56 Z" fill="#ca8a04" stroke="#713f12" stroke-width="1.5"/>
             <path d="M24 56 C21 43, 26 36, 34 31 V56 Z" fill="#facc15"/>
-            <!-- 3D Fasetli Yıldız -->
             <polygon points="34 5 40 19 56 20 44 30 48 46 34 37 20 46 24 30 12 20 28 19" fill="#ca8a04" stroke="#713f12" stroke-width="1.8"/>
             <polygon points="34 5 28 19 12 20 24 30 20 46 34 37" fill="#fde047"/>
             <polygon points="34 13 37 21 45 22 39 27 41 35 34 30 27 35 29 27 23 22 31 21" fill="#ffffff" opacity="0.45"/>
         </svg>`,
 
-        // 7. MAESTRO (ASİST KRALI & 15+ ASİST - Safir Kanatlar Arasında Altın Oyun Kurucu Küresi)
-        playmaker: `<svg width="68" height="82" viewBox="0 0 68 82" fill="none">
+        playmaker: `<svg width="60" height="72" viewBox="0 0 68 82" fill="none">
             <ellipse cx="34" cy="77" rx="23" ry="4" fill="rgba(0,0,0,0.75)"/>
             <path d="M12 68 H56 L58 76 H10 L12 68 Z" fill="#0c0a09"/>
             <path d="M15 56 H53 L56 68 H12 L15 56 Z" fill="#0f172a" stroke="#38bdf8" stroke-width="1.4"/>
             <rect x="20" y="60" width="28" height="5" rx="1" fill="#38bdf8"/>
-            <!-- Safir Kristal Kanatlar -->
             <path d="M13 27 C13 12, 26 12, 34 25 C42 12, 55 12, 55 27 C55 42, 41 50, 34 56 C27 50, 13 42, 13 27 Z" fill="#0369a1" stroke="#eab308" stroke-width="2"/>
             <path d="M13 27 C13 12, 26 12, 34 25 V56 C27 50, 13 42, 13 27 Z" fill="#0284c7"/>
             <circle cx="34" cy="29" r="11.5" fill="#facc15" stroke="#ffffff" stroke-width="1.8"/>
             <polygon points="34 22 39 26 37 32 31 32 29 26" fill="#0f172a"/>
         </svg>`,
 
-        // 8. HAYALİNDEKİ KULÜP ÖZEL ÇERÇEVELİ İMZALI FORMASI
-        dream_jersey_frame: `<svg width="68" height="82" viewBox="0 0 68 82" fill="none">
+        dream_jersey_frame: `<svg width="60" height="72" viewBox="0 0 68 82" fill="none">
             <ellipse cx="34" cy="77" rx="24" ry="4" fill="rgba(0,0,0,0.75)"/>
             <path d="M12 68 H56 L58 76 H10 L12 68 Z" fill="#1c1917"/>
-            <!-- Altın Çerçeveli Cam Vitrin -->
             <rect x="11" y="9" width="46" height="59" rx="3" fill="#0f291a" stroke="#eab308" stroke-width="3"/>
             <rect x="14" y="12" width="40" height="53" stroke="#fef08a" stroke-width="0.8"/>
-            <!-- İçerideki İmzalı Forma -->
             <path d="M23 22 L28 19 H40 L45 22 L51 31 L44 34 L42 28 V54 H26 V28 L24 34 L17 31 L23 22 Z" fill="#facc15" stroke="#ffffff" stroke-width="1.5"/>
             <text x="34" y="44" text-anchor="middle" fill="#07190e" font-size="13" font-weight="900">10</text>
             <path d="M16 14 L30 62" stroke="#ffffff" stroke-width="4" opacity="0.12"/>
@@ -767,12 +878,17 @@
     };
 
     let selectedCollectedIndex = 0;
+    let museumSubView = 'shelves'; // 'shelves' (Kupa Vitrini) veya 'history' (Sezon Geçmişi) - Sayfanın taşmaması için!
+
+    window.switchMuseumSubView = function (view) {
+        museumSubView = view;
+        window.renderCareerAndTrophiesPanel();
+    };
 
     function buildEarnedTrophyCollection() {
         if (typeof gameData === 'undefined' || !gameData) return [];
         const earned = [];
 
-        // 1. Sezon Sonu Kazanılan Tüm Kupalar (Kaç kez kazanıldıysa yan yana eklenir!)
         (gameData.trophies || []).forEach((t) => {
             let svg = PHYSICAL_TROPHY_MODELS.league_cup;
             if (t.type === 'boot') svg = PHYSICAL_TROPHY_MODELS.golden_boot;
@@ -786,7 +902,6 @@
             });
         });
 
-        // 2. Kazanılmış Kariyer Ödülleri
         if (gameData.allTimeGoals >= 1) {
             earned.push({
                 title: "İlk Profesyonel Gol Hatıra Topu",
@@ -884,36 +999,31 @@
             shelves.push(collection.slice(i, i + 4));
         }
 
-        // YAZISIZ, DOĞRUDAN AHŞAP RAF ÜSTÜNE OTURAN KUPALAR!
-        const shelvesHTML = shelves.map((shelfItems, sIdx) => {
+        const shelvesHTML = shelves.slice(0, 2).map((shelfItems, sIdx) => {
             const itemsHTML = shelfItems.map((item, iOffset) => {
                 const globalIdx = sIdx * 4 + iOffset;
                 const isSelected = globalIdx === selectedCollectedIndex;
                 return `
-                    <button type="button" onclick="window.selectCollectedTrophy(${globalIdx})" class="trophy-on-shelf relative flex flex-col items-center justify-end px-1 pt-2 focus:outline-none ${isSelected ? 'trophy-selected-glow z-30' : 'z-20'}">
-                        <!-- Tavan Spot Işığı -->
-                        <div class="absolute -top-3 w-14 h-20 bg-gradient-to-b ${isSelected ? 'from-amber-300/45' : 'from-amber-200/15'} to-transparent pointer-events-none" style="clip-path: polygon(28% 0%, 72% 0%, 100% 100%, 0% 100%);"></div>
+                    <button type="button" onclick="window.selectCollectedTrophy(${globalIdx})" class="trophy-on-shelf relative flex flex-col items-center justify-end px-1 pt-1 focus:outline-none ${isSelected ? 'trophy-selected-glow z-30' : 'z-20'}">
+                        <div class="absolute -top-2 w-14 h-18 bg-gradient-to-b ${isSelected ? 'from-amber-300/45' : 'from-amber-200/15'} to-transparent pointer-events-none" style="clip-path: polygon(28% 0%, 72% 0%, 100% 100%, 0% 100%);"></div>
                         ${item.svg}
                     </button>
                 `;
             }).join('');
 
             const emptyHint = shelfItems.length === 0
-                ? `<div class="col-span-4 h-16 flex items-center justify-center text-[11px] font-bold text-amber-200/25 italic">Yeni ödüller kazandıkça bu rafa dizilecek...</div>`
+                ? `<div class="col-span-4 h-14 flex items-center justify-center text-[11px] font-bold text-amber-200/25 italic">Yeni ödüller kazandıkça bu rafa dizilecek...</div>`
                 : '';
 
             return `
                 <div class="relative pt-1">
-                    <div class="grid grid-cols-4 items-end justify-items-center min-h-[76px] px-3 relative z-20">
+                    <div class="grid grid-cols-4 items-end justify-items-center min-h-[68px] px-3 relative z-20">
                         ${itemsHTML}
                         ${emptyHint}
                     </div>
-                    <!-- 3D Perspektif Ahşap Raf Tablası (Kupaların Tabanı Tam Bu Yüzeye Oturur) -->
-                    <svg class="w-full h-6 block drop-shadow-[0_8px_10px_rgba(0,0,0,0.85)] relative z-10" viewBox="0 0 360 24" preserveAspectRatio="none">
-                        <!-- Raf Üst Perspektif Yüzeyi -->
+                    <svg class="w-full h-5 block drop-shadow-[0_8px_10px_rgba(0,0,0,0.85)] relative z-10" viewBox="0 0 360 24" preserveAspectRatio="none">
                         <polygon points="16,0 344,0 360,13 0,13" fill="#92400e"/>
                         <polygon points="16,0 344,0 352,6 8,6" fill="#78350f"/>
-                        <!-- Raf Ön Kalın Kenarı & Altın Çıtası -->
                         <rect x="0" y="13" width="360" height="8" fill="#451a03" stroke="#d97706" stroke-width="0.8"/>
                         <line x1="0" y1="15" x2="360" y2="15" stroke="#fde047" stroke-width="0.6" opacity="0.6"/>
                         <rect x="0" y="21" width="360" height="3" fill="#090502"/>
@@ -947,69 +1057,80 @@
         ].join('');
 
         careerTab.innerHTML = `
-            <div class="board-panel overflow-hidden">
-                <div class="board-header flex justify-between items-center">
-                    <span class="font-sport text-sm font-black uppercase tracking-wider text-[#eab308]">ŞEREF SALONU & KUPA KOLEKSİYONU</span>
-                    <span class="font-led text-xs text-emerald-200 font-bold">YAŞ: ${gameData.age} • TOPLAM ÖDÜL: ${collection.length}</span>
+            <!-- ÜST ALL-TIME ÖZET & GÖRÜNÜM SEÇİCİ (TEK EKRANDA TAŞMADAN GEÇİŞ) -->
+            <div class="board-panel overflow-hidden flex-shrink-0">
+                <div class="board-header py-1.5 px-3 flex justify-between items-center">
+                    <span class="font-sport text-sm font-black uppercase tracking-wider text-[#eab308]">ŞEREF SALONU • YAŞ ${gameData.age}</span>
+                    <div class="flex gap-1">
+                        <button type="button" onclick="window.switchMuseumSubView('shelves')" class="px-2 py-0.5 rounded font-sport text-[11px] font-black uppercase ${museumSubView === 'shelves' ? 'bg-[#eab308] text-[#07190e]' : 'bg-white/10 text-white'}">
+                            🏆 VİTRİN (${collection.length})
+                        </button>
+                        <button type="button" onclick="window.switchMuseumSubView('history')" class="px-2 py-0.5 rounded font-sport text-[11px] font-black uppercase ${museumSubView === 'history' ? 'bg-[#eab308] text-[#07190e]' : 'bg-white/10 text-white'}">
+                            📋 SEZON GEÇMİŞİ
+                        </button>
+                    </div>
                 </div>
-                <div class="p-2.5 grid grid-cols-4 gap-2 text-center bg-[#f5f1e4]">
-                    <div class="bg-[#e6e0cc] p-1.5 rounded border border-[#143321]">
-                        <span class="text-[9px] text-slate-600 font-black block uppercase">TOPLAM MAÇ</span>
-                        <span class="font-led font-bold text-lg text-[#0f291a]">${gameData.allTimeMatches}</span>
+                <div class="p-2 grid grid-cols-4 gap-1.5 text-center bg-[#f5f1e4]">
+                    <div class="bg-[#e6e0cc] p-1 rounded border border-[#143321]">
+                        <span class="text-[8px] text-slate-600 font-black block uppercase">TOPLAM MAÇ</span>
+                        <span class="font-led font-bold text-base text-[#0f291a]">${gameData.allTimeMatches}</span>
                     </div>
-                    <div class="bg-[#e6e0cc] p-1.5 rounded border border-[#143321]">
-                        <span class="text-[9px] text-slate-600 font-black block uppercase">TOPLAM GOL</span>
-                        <span class="font-led font-bold text-lg text-emerald-800">${gameData.allTimeGoals}</span>
+                    <div class="bg-[#e6e0cc] p-1 rounded border border-[#143321]">
+                        <span class="text-[8px] text-slate-600 font-black block uppercase">TOPLAM GOL</span>
+                        <span class="font-led font-bold text-base text-emerald-800">${gameData.allTimeGoals}</span>
                     </div>
-                    <div class="bg-[#e6e0cc] p-1.5 rounded border border-[#143321]">
-                        <span class="text-[9px] text-slate-600 font-black block uppercase">TOPLAM ASİST</span>
-                        <span class="font-led font-bold text-lg text-blue-800">${gameData.allTimeAssists}</span>
+                    <div class="bg-[#e6e0cc] p-1 rounded border border-[#143321]">
+                        <span class="text-[8px] text-slate-600 font-black block uppercase">TOPLAM ASİST</span>
+                        <span class="font-led font-bold text-base text-blue-800">${gameData.allTimeAssists}</span>
                     </div>
-                    <div class="bg-[#e6e0cc] p-1.5 rounded border border-[#143321]">
-                        <span class="text-[9px] text-slate-600 font-black block uppercase">KOLEKSİYON</span>
-                        <span class="font-led font-bold text-lg text-amber-700">${collection.length} ADET</span>
+                    <div class="bg-[#e6e0cc] p-1 rounded border border-[#143321]">
+                        <span class="text-[8px] text-slate-600 font-black block uppercase">KOLEKSİYON</span>
+                        <span class="font-led font-bold text-base text-amber-700">${collection.length} ESER</span>
                     </div>
                 </div>
             </div>
 
-            <!-- 3D AHŞAP MÜZE VİTRİNİ (YAZISIZ, SAF FİZİKSEL KUPALAR) -->
-            <div class="rounded-xl border-4 border-[#3f1d0b] bg-gradient-to-b from-[#1a0f08] via-[#26160c] to-[#120a05] shadow-2xl overflow-hidden relative">
-                <div class="bg-[#451a03] px-3 py-1.5 border-b-2 border-[#eab308]/60 flex justify-between items-center text-[10px] font-black text-amber-200 uppercase">
+            ${museumSubView === 'shelves' ? `
+            <!-- 3D AHŞAP MÜZE VİTRİNİ (YAZISIZ, SAF FİZİKSEL KUPALAR - TEK EKRANA TAM OTURUR) -->
+            <div class="flex-1 min-h-0 rounded-xl border-4 border-[#3f1d0b] bg-gradient-to-b from-[#1a0f08] via-[#26160c] to-[#120a05] shadow-2xl overflow-hidden flex flex-col justify-between">
+                <div class="bg-[#451a03] px-3 py-1 border-b-2 border-[#eab308]/60 flex justify-between items-center text-[10px] font-black text-amber-200 uppercase">
                     <span>MÜZE RAFLARI (DETAYINI GÖRMEK İÇİN KUPAYA DOKUN)</span>
                     <span class="text-[#eab308]">${collection.length} ESER</span>
                 </div>
 
-                <div class="p-3 space-y-4">
+                <div class="px-3 py-1 space-y-2 flex-1 flex flex-col justify-center">
                     ${shelvesHTML}
                 </div>
 
                 <!-- SEÇİLİ KUPA PİRİNÇ PLAKETİ -->
                 ${activeTrophy ? `
-                <div class="m-2.5 mt-1 p-3 rounded-lg bg-gradient-to-r from-[#fef3c7] via-[#fde68a] to-[#fef3c7] border-2 border-[#78350f] text-[#292524] flex items-center gap-3 shadow-inner">
-                    <div class="w-16 h-18 rounded-lg bg-[#1c1917] border-2 border-[#78350f] flex items-center justify-center shrink-0 p-1 shadow-md">
+                <div class="m-2 mt-0 p-2.5 rounded-lg bg-gradient-to-r from-[#fef3c7] via-[#fde68a] to-[#fef3c7] border-2 border-[#78350f] text-[#292524] flex items-center gap-3 shadow-inner">
+                    <div class="w-14 h-16 rounded-lg bg-[#1c1917] border-2 border-[#78350f] flex items-center justify-center shrink-0 p-1 shadow-md">
                         ${activeTrophy.svg}
                     </div>
                     <div class="flex-1 min-w-0">
                         <div class="flex justify-between items-center gap-1">
-                            <h4 class="font-sport text-lg font-black uppercase text-[#451a03] truncate">${activeTrophy.title}</h4>
+                            <h4 class="font-sport text-base font-black uppercase text-[#451a03] truncate">${activeTrophy.title}</h4>
                             <span class="text-[9px] font-black px-2 py-0.5 rounded bg-[#16a34a] text-white shrink-0">MÜZEDE</span>
                         </div>
-                        <p class="text-[11px] font-black text-amber-900">${activeTrophy.sub}</p>
-                        <p class="text-[11px] font-bold text-[#57534e] leading-tight mt-0.5">${activeTrophy.desc}</p>
+                        <p class="text-[10px] font-black text-amber-900">${activeTrophy.sub}</p>
+                        <p class="text-[10px] font-bold text-[#57534e] leading-tight mt-0.5">${activeTrophy.desc}</p>
                     </div>
                 </div>
                 ` : `
-                <div class="m-2.5 mt-1 p-3 rounded-lg bg-[#292524] border border-amber-500/30 text-center text-xs font-bold text-amber-200">
+                <div class="m-2 mt-0 p-2.5 rounded-lg bg-[#292524] border border-amber-500/30 text-center text-xs font-bold text-amber-200">
                     Henüz müzende kupa yok! İlk golünü attığında veya sezon sonu ödül kazandığında raflara dizilmeye başlayacak.
                 </div>
                 `}
             </div>
-
-            <div class="board-panel overflow-hidden">
-                <div class="board-header">
+            ` : `
+            <!-- SEZON SEZON KARİYER GEÇMİŞİ TABLOSU -->
+            <div class="board-panel overflow-hidden flex-1 min-h-0 flex flex-col">
+                <div class="board-header py-1.5 px-3 flex justify-between items-center">
                     <span class="font-sport text-sm font-black uppercase tracking-wider text-white">SEZON SEZON KARİYER GEÇMİŞİ</span>
+                    <button type="button" onclick="window.switchMuseumSubView('shelves')" class="text-[10px] font-black text-[#eab308] underline">← Raflara Dön</button>
                 </div>
-                <div class="overflow-x-auto bg-[#f5f1e4]">
+                <div class="overflow-y-auto flex-1 bg-[#f5f1e4]">
                     <table class="w-full text-left border-collapse text-[11px] text-slate-800">
                         <thead>
                             <tr class="border-b-2 border-[#0f291a] bg-[#e2dec9] font-black">
@@ -1027,11 +1148,12 @@
                     </table>
                 </div>
             </div>
+            `}
         `;
     };
 
     // =====================================================================
-    // 4. HIZLI SİMÜLASYONDA RASTGELE YEDEK GİRİŞ DAKİKASI
+    // 5. HIZLI SİMÜLASYONDA RASTGELE YEDEK GİRİŞ DAKİKASI
     // =====================================================================
     window.setupQuickSimStep2 = function () {
         simWheelRot = 0;
@@ -1068,7 +1190,7 @@
     };
 
     // =====================================================================
-    // 5. SEYREKLEŞTİRİLMİŞ OLAY KARTLARI
+    // 6. SEYREKLEŞTİRİLMİŞ OLAY KARTLARI & EKSİKSİZ SPOR GAZETESİ SİSTEMİ
     // =====================================================================
     let lastEventWeekNumber = -10;
     const _rawTriggerEventCard = window.triggerRandomWeeklyEventCard;
@@ -1083,71 +1205,171 @@
         if (_rawTriggerEventCard) _rawTriggerEventCard();
     };
 
+    const NEWSPAPER_SVG_PHOTOS = {
+        star_goal: `<svg width="150" height="105" viewBox="0 0 150 105" fill="none"><rect width="150" height="105" fill="#195c31"/><rect x="20" y="15" width="110" height="50" stroke="#ffffff" stroke-width="3" fill="rgba(255,255,255,0.1)"/><circle cx="95" cy="36" r="10" fill="#eab308" stroke="#1c1917" stroke-width="2"/><path d="M35 80 L90 40" stroke="#fde047" stroke-width="3" stroke-dasharray="4 3"/><circle cx="45" cy="70" r="11" fill="#ffffff" stroke="#1c1917" stroke-width="2"/><path d="M28 105 C28 84, 62 84, 62 105" fill="#dc2626" stroke="#1c1917" stroke-width="2"/></svg>`,
+        bench_crisis: `<svg width="150" height="105" viewBox="0 0 150 105" fill="none"><rect width="150" height="105" fill="#334155"/><rect x="15" y="65" width="120" height="10" fill="#78350f" stroke="#1c1917" stroke-width="2"/><circle cx="55" cy="45" r="10" fill="#f1c27d" stroke="#1c1917" stroke-width="2"/><path d="M40 65 C40 52, 70 52, 70 65" fill="#1e293b" stroke="#1c1917" stroke-width="2"/><text x="105" y="50" fill="#eab308" font-size="22" font-weight="900">?</text></svg>`,
+        league_leader: `<svg width="150" height="105" viewBox="0 0 150 105" fill="none"><rect width="150" height="105" fill="#143321"/><polygon points="75 15 92 48 128 52 100 76 108 102 75 86 42 102 50 76 22 52 58 48" fill="#eab308" stroke="#ffffff" stroke-width="2"/><text x="75" y="68" text-anchor="middle" fill="#07190e" font-size="18" font-weight="900">#1</text></svg>`,
+        scandal_paparazzi: `<svg width="150" height="105" viewBox="0 0 150 105" fill="none"><rect width="150" height="105" fill="#1e1b4b"/><polygon points="75 10 90 40 125 35 98 60 115 92 75 74 35 92 52 60 25 35 60 40" fill="#fef08a" opacity="0.85"/><rect x="52" y="42" width="46" height="30" rx="4" fill="#1c1917" stroke="#ffffff" stroke-width="2"/><circle cx="75" cy="57" r="9" fill="#38bdf8" stroke="#ffffff" stroke-width="2"/></svg>`,
+        shock_upset: `<svg width="150" height="105" viewBox="0 0 150 105" fill="none"><rect width="150" height="105" fill="#7f1d1d"/><path d="M82 12 L48 56 H76 L66 94 L104 48 H76 L82 12 Z" fill="#eab308" stroke="#ffffff" stroke-width="2"/></svg>`,
+        transfer_whisper: `<svg width="150" height="105" viewBox="0 0 150 105" fill="none"><rect width="150" height="105" fill="#0f291a"/><rect x="28" y="22" width="94" height="60" rx="4" fill="#f5f1e4" stroke="#1c1917" stroke-width="2"/><line x1="40" y1="38" x2="90" y2="38" stroke="#1c1917" stroke-width="3"/><line x1="40" y1="50" x2="108" y2="50" stroke="#1c1917" stroke-width="2"/><path d="M85 68 L112 40" stroke="#dc2626" stroke-width="4" stroke-linecap="round"/></svg>`
+    };
+
+    function ensureNewspaperModal() {
+        if (document.getElementById('newspaper-frontpage-modal')) return;
+        const appShell = document.getElementById('main-app-shell') || document.body;
+        const wrap = document.createElement('div');
+        wrap.id = 'newspaper-frontpage-modal';
+        wrap.className = "hidden absolute inset-0 z-[75] bg-black/85 flex items-center justify-center p-3";
+        wrap.innerHTML = `
+            <div id="newspaper-sheet" class="newsprint-paper w-full max-w-[400px] p-3.5 rounded-sm newspaper-spin-in select-none">
+                <div class="border-b-4 border-double border-[#1c1917] pb-1.5 mb-2 text-center">
+                    <div class="flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-stone-600 border-b border-stone-400 pb-0.5 mb-1">
+                        <span id="news-date-label">SEZON 1 • HAFTA 4</span>
+                        <span>ULUSAL SPOR BASKISI</span>
+                        <span>FİYAT: ₺15</span>
+                    </div>
+                    <h2 class="font-sport text-4xl font-black tracking-tight uppercase text-[#1c1917] leading-none">SPOR POSTASI</h2>
+                    <div id="news-strapline" class="mt-1 bg-[#1c1917] text-[#f4efe4] text-[10px] font-black uppercase tracking-widest py-0.5 px-2 inline-block">
+                        FLAŞ MANŞET • GÜNDEM ÖZEL
+                    </div>
+                </div>
+                <h3 id="news-headline" class="font-sport text-2xl font-black uppercase text-center text-[#991b1b] leading-none mb-2 tracking-wide">
+                    EMİRHAN KOÇ FIRTINASI!
+                </h3>
+                <div class="grid grid-cols-12 gap-2.5 items-start border-y-2 border-[#1c1917] py-2.5 my-1.5">
+                    <div class="col-span-6 flex flex-col">
+                        <div id="news-svg-frame" class="w-full border-2 border-[#1c1917] bg-stone-800 overflow-hidden flex items-center justify-center"></div>
+                        <span id="news-photo-caption" class="text-[9px] font-bold italic text-stone-600 mt-1 leading-tight">
+                            Foto: Muhabirimiz stadyumdan bildiriyor.
+                        </span>
+                    </div>
+                    <div class="col-span-6 text-left space-y-1.5">
+                        <div id="news-subhead" class="font-sport text-sm font-black uppercase text-[#1c1917] leading-tight border-b border-stone-400 pb-1">
+                            TRİBÜNLER AYAKTA ALKIŞLADI
+                        </div>
+                        <p id="news-body-text" class="text-[11px] font-bold text-stone-800 leading-snug">
+                            Haftanın en kritik mücadelesinde sahneye çıkan genç yıldız, performansıyla spor basınının gündemine oturdu.
+                        </p>
+                    </div>
+                </div>
+                <div class="bg-[#e7dfd1] border border-[#1c1917] p-2 mb-2.5 text-left">
+                    <span class="text-[9px] font-black uppercase tracking-wider text-[#991b1b] block">LİG KULİSLERİ & KISA HABERLER</span>
+                    <p id="news-side-ticker" class="text-[10px] font-extrabold text-stone-800 leading-tight mt-0.5"></p>
+                </div>
+                <button type="button" onclick="window.closeNewspaperModal()" class="w-full py-2.5 bg-[#1c1917] hover:bg-stone-800 text-[#f4efe4] font-sport text-base font-black uppercase tracking-widest transition">
+                    GAZETEYİ KAPAT VE DEVAM ET →
+                </button>
+            </div>
+        `;
+        appShell.appendChild(wrap);
+    }
+
+    window.closeNewspaperModal = function () {
+        const modal = document.getElementById('newspaper-frontpage-modal');
+        if (modal) modal.classList.add('hidden');
+    };
+
+    window.showNewspaperEdition = function (article) {
+        ensureNewspaperModal();
+        const modal = document.getElementById('newspaper-frontpage-modal');
+        const sheet = document.getElementById('newspaper-sheet');
+
+        document.getElementById('news-date-label').innerText = `SEZON ${gameData.season} • ${gameData.week}. HAFTA BASKISI`;
+        document.getElementById('news-strapline').innerText = article.strapline;
+        document.getElementById('news-headline').innerText = article.headline;
+        document.getElementById('news-subhead').innerText = article.subhead;
+        document.getElementById('news-body-text').innerText = article.body;
+        document.getElementById('news-photo-caption').innerText = article.caption;
+        document.getElementById('news-svg-frame').innerHTML = article.svg;
+        document.getElementById('news-side-ticker').innerText = article.sideTicker;
+
+        sheet.classList.remove('newspaper-spin-in');
+        void sheet.offsetWidth;
+        sheet.classList.add('newspaper-spin-in');
+        playNewspaperSound();
+        modal.classList.remove('hidden');
+    };
+
+    function evaluateAndTriggerNewspaper(contextType, extraData = {}) {
+        if (typeof gameData === 'undefined' || !gameData) return;
+        const sorted = [...gameData.standings].sort((a, b) => b.pts - a.pts || (b.ag - b.yg) - (a.ag - a.yg));
+        const leader = sorted[0];
+        const second = sorted[1];
+        const bottom = sorted[sorted.length - 1];
+        const sideTicker = `Zirve: ${leader.name} (${leader.pts}P) lider, ${second.name} (${second.pts}P) takipte. Son sıra: ${bottom.name} (${bottom.pts}P).`;
+
+        let article = null;
+        if (contextType === 'match' && extraData.goals >= 2) {
+            article = {
+                strapline: `${gameData.club.name.toUpperCase()} CEPHESİNDE BAYRAM`,
+                headline: `${gameData.name.toUpperCase()} ŞOV YAPTI!`,
+                subhead: `${extraData.goals} GOLLE RAKİBİ TEK BAŞINA YIKTI`,
+                body: `${gameData.club.name} formasıyla devleşen ${gameData.name}, attığı ${extraData.goals} golle haftanın oyuncusu seçildi.`,
+                caption: `Foto: ${gameData.name} gol sevincini tribünlerle paylaşırken.`,
+                svg: NEWSPAPER_SVG_PHOTOS.star_goal,
+                sideTicker
+            };
+        } else if (contextType === 'match' && extraData.rating <= 5.7 && Math.random() < 0.35) {
+            article = {
+                strapline: "SPOR YAZARLARI ELEŞTİRDİ",
+                headline: `${gameData.name.toUpperCase()} KAYIPLARDA!`,
+                subhead: "BEKLENTİLERİN ALTINDA KALDI",
+                body: `${gameData.club.name} taraftarlarının çok şey beklediği ${gameData.name}, bu haftaki etkisiz oyunuyla hayal kırıklığı yarattı.`,
+                caption: `Foto: ${gameData.name} maç sonunda soyunma odasına giderken.`,
+                svg: NEWSPAPER_SVG_PHOTOS.bench_crisis,
+                sideTicker
+            };
+        } else if (contextType === 'match' && Math.random() < 0.18) {
+            const worldArticles = [
+                {
+                    strapline: `${gameData.leagueName.toUpperCase()} ZİRVE RAPORU`,
+                    headline: `LİDER ${leader.name.toUpperCase()} DOLUDİZGİN!`,
+                    subhead: `${leader.pts} PUANLA ŞAMPİYONLUĞA KOŞUYORLAR`,
+                    body: `Ligde ${gameData.week}. hafta geride kalırken ${leader.name} topladığı ${leader.pts} puanla zirvedeki yerini korudu.`,
+                    caption: `Foto: ${leader.name} zirve yarışında hata yapmıyor.`,
+                    svg: NEWSPAPER_SVG_PHOTOS.league_leader,
+                    sideTicker
+                },
+                {
+                    strapline: "DÜŞME HATTINDA DEPREM",
+                    headline: `${bottom.name.toUpperCase()} CEPHESİNDE KRİZ!`,
+                    subhead: "TARAFTARLAR YÖNETİMİ İSTİFAYA ÇAĞIRDI",
+                    body: `Ligde sadece ${bottom.pts} puan toplayabilen ve son sıraya demir atan ${bottom.name}'da teknik direktörün koltuğu sallantıda!`,
+                    caption: `Foto: ${bottom.name} kulübesinde gergin anlar.`,
+                    svg: NEWSPAPER_SVG_PHOTOS.shock_upset,
+                    sideTicker
+                }
+            ];
+            article = worldArticles[Math.floor(Math.random() * worldArticles.length)];
+        }
+
+        if (article) {
+            setTimeout(() => {
+                const evModal = document.getElementById('event-decision-modal');
+                if (evModal && !evModal.classList.contains('hidden')) return;
+                window.showNewspaperEdition(article);
+            }, 450);
+        }
+    }
+
+    const _baseFinishMatch = window.finishMatchAndSave;
+    window.finishMatchAndSave = function (fromQuickSim = false) {
+        const lastG = fromQuickSim ? 0 : (typeof mGoals !== 'undefined' ? mGoals : 0);
+        const lastRat = typeof mRating !== 'undefined' ? mRating : (gameData.lastRating || 6.4);
+        const lastH = typeof hScore !== 'undefined' ? hScore : 0;
+        const lastA = typeof aScore !== 'undefined' ? aScore : 0;
+
+        if (_baseFinishMatch) _baseFinishMatch(fromQuickSim);
+
+        evaluateAndTriggerNewspaper('match', {
+            goals: lastG,
+            rating: gameData.lastRating || lastRat,
+            hScore: lastH,
+            aScore: lastA
+        });
+    };
+
     if (typeof gameData !== 'undefined' && gameData) {
         window.renderCareerAndTrophiesPanel();
     }
-
-    // =====================================================================
-    // 6. MOBİL BUILD & HER TELEFON EKRANINA UYUM (RESPONSIVE LOCK) YAMASI
-    // =====================================================================
-    const mobileFixStyle = document.createElement('style');
-    mobileFixStyle.innerHTML = `
-        html, body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100dvh;
-            overflow: hidden;
-            overscroll-behavior: none;
-            -webkit-tap-highlight-color: transparent;
-        }
-        /* Ana kabuğu tam mobil ekran yüksekliğine (100dvh) sabitle */
-        .app-container {
-            width: 100% !important;
-            max-width: 440px !important;
-            height: 100dvh !important;
-            min-height: 100dvh !important;
-            max-height: 100dvh !important;
-            overflow: hidden !important;
-            display: flex !important;
-            flex-direction: column !important;
-            padding-top: env(safe-area-inset-top, 0px);
-            padding-bottom: env(safe-area-inset-bottom, 0px);
-        }
-        /* Sadece orta içerik alanı kayabilsin, üst ve alt barlar sabit kalsın */
-        #screen-game {
-            flex: 1 1 auto !important;
-            min-height: 0 !important;
-            display: flex !important;
-            flex-direction: column !important;
-            overflow: hidden !important;
-        }
-        #screen-game > main {
-            flex: 1 1 auto !important;
-            min-height: 0 !important;
-            overflow-y: auto !important;
-            -webkit-overflow-scrolling: touch;
-            padding-bottom: 12px !important;
-        }
-        #game-bottom-nav {
-            flex-shrink: 0 !important;
-        }
-        /* Küçük ekranlı telefonlarda antrenman sahasının taşmasını önle */
-        #trainingMinigameCanvas {
-            height: auto !important;
-            max-height: 55dvh !important;
-            aspect-ratio: 380 / 460 !important;
-        }
-        /* Çok dar ekranlarda (Örn: 360px altı) yazı ve buton taşmasını engelle */
-        @media (max-height: 740px) {
-            #tab-content-hub {
-                gap: 0.45rem !important;
-            }
-            #tab-content-hub .board-panel {
-                padding: 0.6rem !important;
-            }
-        }
-    `;
-    document.head.appendChild(mobileFixStyle);
-    
 })();

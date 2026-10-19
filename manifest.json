@@ -1,0 +1,9 @@
+{
+  "name": "Yıldız Yolu",
+  "short_name": "YıldızYolu",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#091910",
+  "theme_color": "#091910",
+  "orientation": "portrait"
+}
