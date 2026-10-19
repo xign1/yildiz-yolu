@@ -1,11 +1,10 @@
 // =========================================================================
-// ui_stage2.js - EKSİKSİZ TAM SÜRÜM (800+ SATIR - HİÇBİR ÖZELLİK KIRPILMADI)
-// 1. Mobil Tek Ekran (No-Scroll) Mimarisi & Ana Menü Hayalet Bar Çözümü
-// 2. Gerçekçi Mekanik Çark Mandal Sesi (Tüm Çarklarda Çalışır)
-// 3. 3D Perspektif Slalom (3D Dubalar, 3D Mankenler, Doğal Dripling Fiziği)
-// 4. Yazısız, Doğrudan Raf Üstüne Oturan 8 Tam Detaylı 3D Kupa Modeli & Sekmeli Müze
-// 5. Dönerek Düşen "SPOR POSTASI" Gazetesi + Ses + 25+ Dinamik Manşet
-// 6. Simülasyonda Rastgele Yedek Giriş Dakikası & Seyrekleştirilmiş Olay Kartları
+// ui_stage2.js - HATA AYIKLANMIŞ, EKSİKSİZ TAM SÜRÜM
+// 1. Ana Menü Sızıntısı Çözüldü (#screen-game:not(.hidden))
+// 2. Çark Dönmeme Hatası Çözüldü (filter.Q.setValueAtTime(2.2, now) & try/catch)
+// 3. Tüm Sekmeler (Soyunma Odası, Antrenman, Lig, Müze, Maç) Tek Ekrana (No-Scroll) Oturtuldu
+// 4. 3D Perspektif Slalom (Akıcı Dripling, 3D Dubalar ve Mankenler)
+// 5. Yazısız, Doğrudan Raf Üstüne Oturan 8 Detaylı 3D Kupa Modeli & Spor Gazetesi
 // =========================================================================
 (function () {
 
@@ -70,18 +69,32 @@
             padding-bottom: env(safe-area-inset-bottom, 0px);
         }
 
-        #screen-menu, #screen-create {
+        /* GİZLİ EKRANLAR VE SEKMELER KESİNLİKLE GÖRÜNMEZ (.hidden EZİLMEZ!) */
+        .hidden {
+            display: none !important;
+        }
+
+        #screen-menu:not(.hidden),
+        #screen-create:not(.hidden),
+        #screen-club-draw:not(.hidden) {
             flex: 1 1 auto !important;
             min-height: 0 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
             overflow-y: auto !important;
         }
 
-        #screen-game {
+        #screen-game:not(.hidden) {
             flex: 1 1 auto !important;
             min-height: 0 !important;
             display: flex !important;
             flex-direction: column !important;
             overflow: hidden !important;
+        }
+
+        #screen-game > header {
+            flex-shrink: 0 !important;
         }
 
         #screen-game > main {
@@ -90,13 +103,13 @@
             display: flex !important;
             flex-direction: column !important;
             overflow: hidden !important;
-            padding: 0.45rem !important;
+            padding: 0.4rem 0.5rem !important;
         }
 
         /* Tüm sekmeler tek ekrana ferah yayılır, taşma yapmaz */
         #tab-content-hub:not(.hidden),
         #tab-content-training:not(.hidden),
-        #tab-content-table:not(.hidden),
+        #tab-content-league:not(.hidden),
         #tab-content-career:not(.hidden),
         #tab-content-match:not(.hidden) {
             flex: 1 1 auto !important;
@@ -104,23 +117,39 @@
             display: flex !important;
             flex-direction: column !important;
             justify-content: space-between !important;
-            gap: 0.4rem !important;
+            gap: 0.35rem !important;
             overflow: hidden !important;
             margin: 0 !important;
         }
 
-        /* Puan tablosu kendi kutusu içinde kayabilsin ama ekranı taşırmasın */
-        #tab-content-table > .board-panel {
+        /* Antrenman haritası dikey alana göre esnek büyür/küçülür, asla taşmaz */
+        #tab-content-training > div.relative.w-full.h-64 {
+            height: auto !important;
+            flex: 1 1 auto !important;
+            min-height: 155px !important;
+            max-height: 250px !important;
+        }
+
+        /* Puan tablosu (#tab-content-league) kendi kutusu içinde kayar, ekranı taşırmaz */
+        #tab-content-league > .board-panel {
             flex: 1 1 auto !important;
             min-height: 0 !important;
             display: flex !important;
             flex-direction: column !important;
             overflow: hidden !important;
         }
-        #tab-content-table .overflow-x-auto {
+        #tab-content-league .overflow-x-auto {
             flex: 1 1 auto !important;
             min-height: 0 !important;
             overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Canlı maç ekranında spiker kutusu esnek olur */
+        #tab-content-match > .board-panel.h-44 {
+            height: auto !important;
+            flex: 1 1 auto !important;
+            min-height: 80px !important;
         }
 
         #game-bottom-nav {
@@ -128,167 +157,180 @@
         }
 
         #training-minigame-modal > .board-panel {
-            max-width: 432px !important;
+            max-width: 420px !important;
         }
         #trainingMinigameCanvas {
             height: auto !important;
             max-height: 52dvh !important;
-            aspect-ratio: 380 / 460 !important;
+            aspect-ratio: 360 / 420 !important;
         }
 
-        /* Kısa ekranlı telefonlar için orantılı ferahlık ayarı */
-        @media (max-height: 760px) {
-            #tab-content-hub .p-3\.5 { padding: 0.55rem !important; }
-            #tab-content-hub .py-3 { padding-top: 0.45rem !important; padding-bottom: 0.45rem !important; }
-            #tab-content-hub .space-y-3 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.4rem !important; }
-            #tab-content-training .h-64 { height: 12.5rem !important; }
+        /* Tarayıcı adres çubuğu açıkken veya kısa ekranlarda otomatik kompaktlaşma */
+        @media (max-height: 780px) {
+            #screen-game > header > div:first-child { padding: 0.4rem 0.6rem !important; }
+            #screen-game > header > div:last-child { padding: 0.3rem 0.6rem !important; }
+            #tab-content-hub .p-3\\.5 { padding: 0.5rem 0.65rem !important; }
+            #tab-content-hub .p-3 { padding: 0.45rem 0.6rem !important; }
+            #tab-content-hub .py-3 { padding-top: 0.4rem !important; padding-bottom: 0.4rem !important; }
+            #tab-content-hub .space-y-3 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.35rem !important; }
+            #tab-content-training .p-3\\.5 { padding: 0.5rem 0.65rem !important; }
+            #clubWheelCanvas { width: 240px !important; height: 240px !important; }
         }
     `;
     document.head.appendChild(styleEl);
 
-    function upgradeTrainingCanvasSize() {
+    // Canvas boyutunu Şut/Pas (360px merkezli) ve Slalom ile %100 uyumlu 360x420 yap
+    function syncTrainingCanvasDimensions() {
         const cvs = document.getElementById('trainingMinigameCanvas');
         if (cvs) {
-            cvs.width = 380;
-            cvs.height = 460;
+            cvs.width = 360;
+            cvs.height = 420;
             cvs.className = "w-full rounded-lg border-2 border-[#143321] bg-[#1b5e34] touch-none cursor-pointer shadow-inner select-none";
         }
     }
-    upgradeTrainingCanvasSize();
+    syncTrainingCanvasDimensions();
 
     // =====================================================================
-    // 1. ANA MENÜDEKİ "HAYALET BAR" HATASINI ÇÖZEN EKRAN YÖNETİCİSİ
+    // 1. EKRAN GEÇİŞ YÖNETİCİSİ (ANA MENÜDE OYUN EKRANINI KESİN GİZLER)
     // =====================================================================
-    function syncTopAndBottomBars() {
-        const gameScr = document.getElementById('screen-game');
-        const topBar = document.getElementById('game-top-bar');
-        const bottomNav = document.getElementById('game-bottom-nav');
-        const isGameVisible = gameScr && !gameScr.classList.contains('hidden');
+    const ALL_SCREENS = ['screen-menu', 'screen-create', 'screen-club-draw', 'screen-game'];
 
-        if (!isGameVisible) {
-            if (topBar) topBar.classList.add('hidden');
-            if (bottomNav) bottomNav.classList.add('hidden');
-        } else {
-            if (topBar) topBar.classList.remove('hidden');
-            const matchTab = document.getElementById('tab-content-match');
-            if (bottomNav && (!matchTab || matchTab.classList.contains('hidden'))) {
-                bottomNav.classList.remove('hidden');
+    window.showScreen = function (screenId) {
+        ALL_SCREENS.forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (id === screenId) {
+                el.classList.remove('hidden');
+            } else {
+                el.classList.add('hidden');
             }
+        });
+        if (screenId === 'screen-menu' && typeof renderSaveSlots === 'function') {
+            renderSaveSlots();
         }
+    };
+
+    // İlk açılışta sadece ana menünün görünmesini garanti altına al
+    if (!gameData) {
+        window.showScreen('screen-menu');
     }
 
-    const _origShowScreen = window.showScreen;
-    window.showScreen = function (screenId) {
-        if (_origShowScreen) _origShowScreen(screenId);
-        syncTopAndBottomBars();
-    };
-    setTimeout(syncTopAndBottomBars, 30);
-    window.addEventListener('load', syncTopAndBottomBars);
-
     // =====================================================================
-    // 2. GERÇEKÇİ MEKANİK ÇARK MANDAL SESİ (TÜM ÇARKLARDA ÇALIŞIR)
+    // 2. ÇARKLARI KİLİTLEMEYEN MEKANİK ÇARK MANDAL SESİ (HATASIZ!)
     // =====================================================================
     let lastPegIndexMap = {};
 
     function playMechanicalWheelPegSound() {
-        if (window.SFX && window.SFX.muted) return;
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (!AudioCtx) return;
-        if (!window._gameAudioCtx) window._gameAudioCtx = new AudioCtx();
-        const ctx = window._gameAudioCtx;
-        if (ctx.state === 'suspended') ctx.resume();
+        try {
+            if (window.SFX && window.SFX.muted) return;
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) return;
+            if (!window._gameAudioCtx) window._gameAudioCtx = new AudioCtx();
+            const ctx = window._gameAudioCtx;
+            if (ctx.state === 'suspended') {
+                ctx.resume().catch(() => {});
+                return;
+            }
 
-        const now = ctx.currentTime;
+            const now = ctx.currentTime;
 
-        // 1. Ahşap/Plastik Mandal Çarpma Gövdesi (Tok rezonans)
-        const osc = ctx.createOscillator();
-        const oscGain = ctx.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(620, now);
-        osc.frequency.exponentialRampToValueAtTime(140, now + 0.028);
+            // 1. Ahşap/Plastik Mandal Çarpma Gövdesi
+            const osc = ctx.createOscillator();
+            const oscGain = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(620, now);
+            osc.frequency.exponentialRampToValueAtTime(140, now + 0.028);
 
-        oscGain.gain.setValueAtTime(0.28, now);
-        oscGain.gain.exponentialRampToValueAtTime(0.005, now + 0.03);
+            oscGain.gain.setValueAtTime(0.26, now);
+            oscGain.gain.exponentialRampToValueAtTime(0.005, now + 0.03);
 
-        osc.connect(oscGain);
-        oscGain.connect(ctx.destination);
-        osc.start(now);
-        osc.stop(now + 0.032);
+            osc.connect(oscGain);
+            oscGain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.032);
 
-        // 2. İbre Tıkırtı Darbesi (Kısa mekanik transient click)
-        const bufSize = Math.floor(ctx.sampleRate * 0.012);
-        const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
-        const data = buf.getChannelData(0);
-        for (let i = 0; i < bufSize; i++) {
-            data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufSize * 0.3));
+            // 2. İbre Tıkırtı Darbesi (DÜZELTİLDİ: filter.Q.setValueAtTime(2.2, now))
+            const bufSize = Math.floor(ctx.sampleRate * 0.012);
+            const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+            const data = buf.getChannelData(0);
+            for (let i = 0; i < bufSize; i++) {
+                data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufSize * 0.3));
+            }
+            const noise = ctx.createBufferSource();
+            noise.buffer = buf;
+
+            const filter = ctx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.setValueAtTime(1850, now);
+            filter.Q.setValueAtTime(2.2, now);
+
+            const nGain = ctx.createGain();
+            nGain.gain.setValueAtTime(0.20, now);
+            nGain.gain.exponentialRampToValueAtTime(0.01, now + 0.012);
+
+            noise.connect(filter);
+            filter.connect(nGain);
+            nGain.connect(ctx.destination);
+            noise.start(now);
+        } catch (err) {
+            // Ses hatası olursa çark döngüsünü asla durdurma
         }
-        const noise = ctx.createBufferSource();
-        noise.buffer = buf;
-
-        const filter = ctx.createBiquadFilter();
-        filter.type = 'bandpass';
-        filter.frequency.setValueAtTime(1850, now);
-        filter.Q.setValueAtTime(2.2);
-
-        const nGain = ctx.createGain();
-        nGain.gain.setValueAtTime(0.22, now);
-        nGain.gain.exponentialRampToValueAtTime(0.01, now + 0.012);
-
-        noise.connect(filter);
-        filter.connect(nGain);
-        nGain.connect(ctx.destination);
-        noise.start(now);
     }
 
     window.bounceWheelPointer = function (pointerId, currentAngle) {
-        const ptr = document.getElementById(pointerId);
-        const pegCount = 16;
-        const currentPeg = Math.floor((currentAngle / (Math.PI * 2)) * pegCount);
+        try {
+            const ptr = document.getElementById(pointerId);
+            const pegCount = 16;
+            const currentPeg = Math.floor((currentAngle / (Math.PI * 2)) * pegCount);
 
-        if (lastPegIndexMap[pointerId] !== currentPeg) {
-            lastPegIndexMap[pointerId] = currentPeg;
-            playMechanicalWheelPegSound();
-            if (ptr) {
-                ptr.style.transform = 'rotate(-22deg)';
-                setTimeout(() => {
-                    if (ptr) ptr.style.transform = 'rotate(0deg)';
-                }, 45);
+            if (lastPegIndexMap[pointerId] !== currentPeg) {
+                lastPegIndexMap[pointerId] = currentPeg;
+                playMechanicalWheelPegSound();
+                if (ptr) {
+                    ptr.style.transform = 'rotate(-22deg)';
+                    setTimeout(() => {
+                        if (ptr) ptr.style.transform = 'rotate(0deg)';
+                    }, 45);
+                }
             }
-        }
+        } catch (err) {}
     };
 
-    // Gazete düşüşü için gerçekçi kağıt hışırtısı sesi
     function playNewspaperSound() {
-        if (window.SFX && window.SFX.muted) return;
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (!AudioCtx) return;
-        if (!window._gameAudioCtx) window._gameAudioCtx = new AudioCtx();
-        const ctx = window._gameAudioCtx;
-        if (ctx.state === 'suspended') ctx.resume();
+        try {
+            if (window.SFX && window.SFX.muted) return;
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) return;
+            if (!window._gameAudioCtx) window._gameAudioCtx = new AudioCtx();
+            const ctx = window._gameAudioCtx;
+            if (ctx.state === 'suspended') {
+                ctx.resume().catch(() => {});
+                return;
+            }
 
-        const now = ctx.currentTime;
-        const dur = 0.22;
-        const buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
-        const data = buf.getChannelData(0);
-        for (let i = 0; i < data.length; i++) {
-            data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.08));
-        }
-        const src = ctx.createBufferSource();
-        src.buffer = buf;
-        const filter = ctx.createBiquadFilter();
-        filter.type = 'bandpass';
-        filter.frequency.setValueAtTime(950, now);
-        const gain = ctx.createGain();
-        gain.gain.setValueAtTime(0.35, now);
-        src.connect(filter);
-        filter.connect(gain);
-        gain.connect(ctx.destination);
-        src.start(now);
+            const now = ctx.currentTime;
+            const dur = 0.22;
+            const buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
+            const data = buf.getChannelData(0);
+            for (let i = 0; i < data.length; i++) {
+                data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.08));
+            }
+            const src = ctx.createBufferSource();
+            src.buffer = buf;
+            const filter = ctx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.setValueAtTime(950, now);
+            const gain = ctx.createGain();
+            gain.gain.setValueAtTime(0.35, now);
+            src.connect(filter);
+            filter.connect(gain);
+            gain.connect(ctx.destination);
+            src.start(now);
+        } catch (err) {}
     }
 
     // =====================================================================
     // 3. PARMAĞINLA SÜREKLİ YÖNLENDİRİLEN GERÇEKÇİ DRİPLİNG SLALOM
-    // (3D Perspektif Saha + 3D Dubalar + 3D Mankenler + Sağ/Sol Ayak Dripling)
     // =====================================================================
     let slalomLoopId = null;
     let slalomActive = false;
@@ -296,18 +338,18 @@
     let slalomTimeLeft = 1500;
     let slalomActiveGate = 0;
     let slalomTotalGates = 4;
-    let slalomPointer = { down: false, x: 190, y: 400 };
+    let slalomPointer = { down: false, x: 180, y: 360 };
     let dribbleFootPhase = 0;
 
-    const slPlayer = { x: 190, y: 425, vx: 0, vy: 0, angle: -Math.PI / 2, r: 10 };
-    const slBall = { x: 190, y: 412, r: 5.8 };
+    const slPlayer = { x: 180, y: 392, vx: 0, vy: 0, angle: -Math.PI / 2, r: 10 };
+    const slBall = { x: 180, y: 378, r: 5.8 };
     let slGates = [];
     let slObstacles = [];
 
     function getPerspectiveBounds(y, W, H) {
-        const t = Math.max(0, Math.min(1, (H - y) / (H - 30)));
-        const margin = 16 + t * 44;
-        const scale = 1.05 - t * 0.28;
+        const t = Math.max(0, Math.min(1, (H - y) / (H - 28)));
+        const margin = 14 + t * 40;
+        const scale = 1.05 - t * 0.26;
         return { left: margin, right: W - margin, scale, t };
     }
 
@@ -384,13 +426,13 @@
     }
 
     function initRandomSlalomCourse() {
-        upgradeTrainingCanvasSize();
-        slPlayer.x = 190; slPlayer.y = 426; slPlayer.vx = 0; slPlayer.vy = 0; slPlayer.angle = -Math.PI / 2;
-        slBall.x = 190; slBall.y = 413;
+        syncTrainingCanvasDimensions();
+        slPlayer.x = 180; slPlayer.y = 392; slPlayer.vx = 0; slPlayer.vy = 0; slPlayer.angle = -Math.PI / 2;
+        slBall.x = 180; slBall.y = 378;
         slalomActiveGate = 0;
         dribbleFootPhase = 0;
 
-        const gateCounts = [3, 4, 4, 5, 5];
+        const gateCounts = [3, 4, 4, 5];
         slalomTotalGates = gateCounts[Math.floor(Math.random() * gateCounts.length)];
         slalomTimeLeft = (16 + slalomTotalGates * 3) * 60;
         slalomState = 'playing';
@@ -399,8 +441,8 @@
         slGates = [];
         slObstacles = [];
 
-        const topY = 76;
-        const botY = 362;
+        const topY = 72;
+        const botY = 332;
         const stepY = (botY - topY) / Math.max(1, slalomTotalGates - 1);
 
         let preferLeft = Math.random() < 0.5;
@@ -408,17 +450,17 @@
             const gy = Math.round(botY - i * stepY);
             let gcx;
             if (i === slalomTotalGates - 1 && Math.random() < 0.4) {
-                gcx = 165 + Math.random() * 50;
+                gcx = 155 + Math.random() * 50;
             } else {
-                gcx = preferLeft ? (102 + Math.random() * 48) : (225 + Math.random() * 48);
+                gcx = preferLeft ? (96 + Math.random() * 44) : (215 + Math.random() * 44);
                 preferLeft = !preferLeft;
             }
-            const gw = 68 + Math.random() * 12;
+            const gw = 66 + Math.random() * 12;
             slGates.push({ id: i + 1, y: gy, cx: gcx, w: gw, passed: false });
 
             if (i < slalomTotalGates - 1 && Math.random() < 0.7) {
                 const midY = gy - stepY * 0.5;
-                const obsX = 145 + Math.random() * 90;
+                const obsX = 135 + Math.random() * 90;
                 slObstacles.push({ x: obsX, y: midY, r: 10 });
             }
         }
@@ -487,7 +529,7 @@
         ctx.fillRect(0, 0, W, H);
 
         const stripeCount = 10;
-        const fieldTop = 32, fieldBot = H - 14;
+        const fieldTop = 30, fieldBot = H - 12;
         const sliceH = (fieldBot - fieldTop) / stripeCount;
 
         for (let i = 0; i < stripeCount; i++) {
@@ -520,9 +562,9 @@
 
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 3;
-        ctx.strokeRect(W / 2 - 42, 12, 84, 20);
+        ctx.strokeRect(W / 2 - 40, 10, 80, 20);
         ctx.fillStyle = 'rgba(255,255,255,0.18)';
-        ctx.fillRect(W / 2 - 42, 12, 84, 20);
+        ctx.fillRect(W / 2 - 40, 10, 80, 20);
 
         slGates.slice().reverse().forEach((g) => {
             const idx = g.id - 1;
@@ -567,25 +609,25 @@
             }
 
             const prevY = slPlayer.y;
-            const dribbleRunSpeed = 1.32 + Math.max(0, (gameData ? gameData.stats.dribble : 60) - 55) * 0.012;
+            const dribbleRunSpeed = 1.75 + Math.max(0, (gameData ? gameData.stats.dribble : 60) - 55) * 0.015;
 
             if (slalomPointer.down) {
                 const dx = slalomPointer.x - slPlayer.x;
                 const dy = slalomPointer.y - slPlayer.y;
                 const dist = Math.hypot(dx, dy);
 
-                if (dist > 8) {
+                if (dist > 6) {
                     const targetAngle = Math.atan2(dy, dx);
                     let diffAngle = targetAngle - slPlayer.angle;
                     while (diffAngle > Math.PI) diffAngle -= Math.PI * 2;
                     while (diffAngle < -Math.PI) diffAngle += Math.PI * 2;
-                    slPlayer.angle += diffAngle * 0.18;
+                    slPlayer.angle += diffAngle * 0.22;
 
-                    const speed = Math.min(dribbleRunSpeed, dist * 0.045);
+                    const speed = Math.min(dribbleRunSpeed, Math.max(0.95, dist * 0.08));
                     slPlayer.vx = Math.cos(slPlayer.angle) * speed;
                     slPlayer.vy = Math.sin(slPlayer.angle) * speed;
 
-                    dribbleFootPhase += 0.14;
+                    dribbleFootPhase += 0.18;
                 } else {
                     slPlayer.vx *= 0.7;
                     slPlayer.vy *= 0.7;
@@ -600,7 +642,7 @@
 
             const curBounds = getPerspectiveBounds(slPlayer.y, W, H);
             slPlayer.x = Math.max(curBounds.left + 8, Math.min(curBounds.right - 8, slPlayer.x));
-            slPlayer.y = Math.max(34, Math.min(H - 18, slPlayer.y));
+            slPlayer.y = Math.max(32, Math.min(H - 16, slPlayer.y));
 
             const leadDist = (12.5 + Math.sin(dribbleFootPhase * 2) * 3.2) * curBounds.scale;
             const footSideOffset = Math.cos(dribbleFootPhase) * 3.5 * curBounds.scale;
@@ -658,8 +700,17 @@
 
         if (slalomPointer.down && slalomState === 'playing') {
             ctx.beginPath();
+            ctx.moveTo(slPlayer.x, slPlayer.y);
+            ctx.lineTo(slalomPointer.x, slalomPointer.y);
+            ctx.strokeStyle = 'rgba(250, 204, 21, 0.35)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([4, 4]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.beginPath();
             ctx.arc(slalomPointer.x, slalomPointer.y, 10, 0, Math.PI * 2);
-            ctx.strokeStyle = 'rgba(250, 204, 21, 0.5)';
+            ctx.strokeStyle = 'rgba(250, 204, 21, 0.65)';
             ctx.lineWidth = 2;
             ctx.stroke();
         }
@@ -699,7 +750,7 @@
 
     const _stage1StartStation = window.startSelectedTrainingStation;
     window.startSelectedTrainingStation = function () {
-        upgradeTrainingCanvasSize();
+        syncTrainingCanvasDimensions();
         if (window.selectedStationType === 'dribbling') {
             if (typeof gameData === 'undefined' || !gameData) return;
             if (gameData.trainedThisWeek) {
@@ -743,7 +794,6 @@
 
     // =====================================================================
     // 4. TAM DETAYLI 8 GERÇEKÇİ 3D KUPA MODELİ & TEK EKRAN MÜZE MİMARİSİ
-    // (Hiçbir SVG kırpılmadı! Vitrini ve Sezon Geçmişini tek tıkla değiştirebilirsin)
     // =====================================================================
     const PHYSICAL_TROPHY_MODELS = {
         league_cup: `<svg width="60" height="72" viewBox="0 0 68 82" fill="none">
@@ -878,7 +928,7 @@
     };
 
     let selectedCollectedIndex = 0;
-    let museumSubView = 'shelves'; // 'shelves' (Kupa Vitrini) veya 'history' (Sezon Geçmişi) - Sayfanın taşmaması için!
+    let museumSubView = 'shelves';
 
     window.switchMuseumSubView = function (view) {
         museumSubView = view;
@@ -1057,7 +1107,6 @@
         ].join('');
 
         careerTab.innerHTML = `
-            <!-- ÜST ALL-TIME ÖZET & GÖRÜNÜM SEÇİCİ (TEK EKRANDA TAŞMADAN GEÇİŞ) -->
             <div class="board-panel overflow-hidden flex-shrink-0">
                 <div class="board-header py-1.5 px-3 flex justify-between items-center">
                     <span class="font-sport text-sm font-black uppercase tracking-wider text-[#eab308]">ŞEREF SALONU • YAŞ ${gameData.age}</span>
@@ -1091,7 +1140,6 @@
             </div>
 
             ${museumSubView === 'shelves' ? `
-            <!-- 3D AHŞAP MÜZE VİTRİNİ (YAZISIZ, SAF FİZİKSEL KUPALAR - TEK EKRANA TAM OTURUR) -->
             <div class="flex-1 min-h-0 rounded-xl border-4 border-[#3f1d0b] bg-gradient-to-b from-[#1a0f08] via-[#26160c] to-[#120a05] shadow-2xl overflow-hidden flex flex-col justify-between">
                 <div class="bg-[#451a03] px-3 py-1 border-b-2 border-[#eab308]/60 flex justify-between items-center text-[10px] font-black text-amber-200 uppercase">
                     <span>MÜZE RAFLARI (DETAYINI GÖRMEK İÇİN KUPAYA DOKUN)</span>
@@ -1102,7 +1150,6 @@
                     ${shelvesHTML}
                 </div>
 
-                <!-- SEÇİLİ KUPA PİRİNÇ PLAKETİ -->
                 ${activeTrophy ? `
                 <div class="m-2 mt-0 p-2.5 rounded-lg bg-gradient-to-r from-[#fef3c7] via-[#fde68a] to-[#fef3c7] border-2 border-[#78350f] text-[#292524] flex items-center gap-3 shadow-inner">
                     <div class="w-14 h-16 rounded-lg bg-[#1c1917] border-2 border-[#78350f] flex items-center justify-center shrink-0 p-1 shadow-md">
@@ -1124,7 +1171,6 @@
                 `}
             </div>
             ` : `
-            <!-- SEZON SEZON KARİYER GEÇMİŞİ TABLOSU -->
             <div class="board-panel overflow-hidden flex-1 min-h-0 flex flex-col">
                 <div class="board-header py-1.5 px-3 flex justify-between items-center">
                     <span class="font-sport text-sm font-black uppercase tracking-wider text-white">SEZON SEZON KARİYER GEÇMİŞİ</span>
@@ -1153,8 +1199,19 @@
     };
 
     // =====================================================================
-    // 5. HIZLI SİMÜLASYONDA RASTGELE YEDEK GİRİŞ DAKİKASI
+    // 5. HIZLI SİMÜLASYONDA RASTGELE YEDEK GİRİŞ DAKİKASI & GOL KAYDI
     // =====================================================================
+    window.lastQuickSimPlayerGoals = 0;
+
+    const _origResolveQuickSim = window.resolveQuickSimWheel;
+    window.resolveQuickSimWheel = function (step) {
+        const beforeGoals = gameData ? gameData.goals : 0;
+        if (_origResolveQuickSim) _origResolveQuickSim(step);
+        if (step === 2 && gameData) {
+            window.lastQuickSimPlayerGoals = Math.max(0, gameData.goals - beforeGoals);
+        }
+    };
+
     window.setupQuickSimStep2 = function () {
         simWheelRot = 0;
         const starter = isPlayerStarter() && gameData.energy >= 32;
@@ -1354,7 +1411,8 @@
 
     const _baseFinishMatch = window.finishMatchAndSave;
     window.finishMatchAndSave = function (fromQuickSim = false) {
-        const lastG = fromQuickSim ? 0 : (typeof mGoals !== 'undefined' ? mGoals : 0);
+        const lastG = fromQuickSim ? (window.lastQuickSimPlayerGoals || 0) : (typeof mGoals !== 'undefined' ? mGoals : 0);
+        window.lastQuickSimPlayerGoals = 0;
         const lastRat = typeof mRating !== 'undefined' ? mRating : (gameData.lastRating || 6.4);
         const lastH = typeof hScore !== 'undefined' ? hScore : 0;
         const lastA = typeof aScore !== 'undefined' ? aScore : 0;
